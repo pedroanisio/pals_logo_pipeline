@@ -187,14 +187,31 @@ class TestNodeColors:
 
 class TestNodeGlows:
     def test_24_glow_halos(self, svg_text):
-        """Each visible node has a glow halo (filter=glow)."""
+        """Each visible node has a per-node radial-gradient glow halo."""
+        glow_circles = re.findall(r'<circle[^>]*fill="url\(#glow-n\d+\)"', svg_text)
+        assert len(glow_circles) == 24
+
+    def test_nib_ball_uses_blur_filter(self, svg_text):
+        """Nib ball glow still uses the gaussian blur filter."""
         glow_circles = re.findall(r'<circle[^>]*filter="url\(#glow\)"', svg_text)
-        # 24 node glows + nib ball glow = 25
-        assert len(glow_circles) == 25
+        assert len(glow_circles) == 1
 
     def test_glow_filter_defined(self, svg_text):
         assert 'id="glow"' in svg_text
         assert "feGaussianBlur" in svg_text
+
+    def test_per_node_glow_gradients_defined(self, svg_text, schema):
+        """Every visible node has its own radial gradient in <defs>."""
+        for node in schema.nodes:
+            if node.id == 14:
+                continue
+            assert f'id="glow-n{node.id}"' in svg_text
+
+    def test_glow_gradient_stops_match_sprite_material(self, svg_text):
+        """Gradient stops match the Three.js sprite_glow material."""
+        assert 'offset="0%"' in svg_text
+        assert 'offset="40%"' in svg_text
+        assert 'offset="100%"' in svg_text
 
 
 # ── Edges ────────────────────────────────────────────────────
@@ -417,3 +434,80 @@ class TestNodeColorModule:
         assert ARC_STYLES[0]["color"] == "AMBER"
         assert ARC_STYLES[1]["color"] == "COPPER"
         assert ARC_STYLES[2]["color"] == "BRONZE"
+
+
+# ── Degree-based node sizing (canonical √2-chain) ───────────
+
+class TestDegreeBasedSizing:
+    """Verify node radii match the canonical Three.js formula:
+    core_r(d) = R_VERTEX × 0.035 × (√2)^(d − 1)
+    """
+
+    def test_formula_constants(self, schema):
+        """BASE_R = r_green × (√2 − 1) × 0.035."""
+        from p_logo.exporters.node_colors import node_core_radius
+        r_green = schema.r_green
+        expected_base = r_green * (math.sqrt(2) - 1) * 0.035
+        # degree=1 gives BASE_R × (√2)^0 = BASE_R
+        assert node_core_radius(r_green, 1) == pytest.approx(expected_base, rel=1e-6)
+
+    def test_sqrt2_chain(self, schema):
+        """Each degree step multiplies radius by √2."""
+        from p_logo.exporters.node_colors import node_core_radius
+        r = schema.r_green
+        for d in range(1, 7):
+            r_d = node_core_radius(r, d)
+            r_d1 = node_core_radius(r, d + 1)
+            assert r_d1 / r_d == pytest.approx(math.sqrt(2), rel=1e-6)
+
+    def test_degree_6_is_largest(self, schema):
+        """Node 9 (deg 6) produces the largest core radius."""
+        from p_logo.exporters.node_colors import compute_degrees, node_core_radius
+        degrees = compute_degrees(schema)
+        radii = {n.id: node_core_radius(schema.r_green, degrees[n.id])
+                 for n in schema.nodes}
+        assert max(radii, key=radii.get) == 9
+
+    def test_node_radii_span(self, schema):
+        """Deg 1 → ~0.018, deg 6 → ~0.101 (matching Three.js comments)."""
+        from p_logo.exporters.node_colors import node_core_radius
+        r = schema.r_green
+        assert node_core_radius(r, 1) == pytest.approx(0.0178, abs=0.001)
+        assert node_core_radius(r, 6) == pytest.approx(0.1009, abs=0.002)
+
+    def test_svg_has_distinct_node_radii(self, svg_text):
+        """SVG node circles have more than 2 distinct radii (not binary)."""
+        from p_logo_pipeline.palette import OPACITY_DEFAULTS
+        core_op = OPACITY_DEFAULTS["node_core"]["base"]
+        pattern = rf'<circle[^>]*fill-opacity="{core_op}"[^>]*r="([^"]*)"'
+        # Try both attribute orderings
+        radii = re.findall(pattern, svg_text)
+        if not radii:
+            pattern = rf'<circle[^>]*r="([^"]*)"[^>]*fill-opacity="{core_op}"'
+            radii = re.findall(pattern, svg_text)
+        radii_set = set(radii)
+        assert len(radii_set) >= 4, f"Expected ≥4 distinct radii, got {len(radii_set)}: {radii_set}"
+
+    def test_glow_radius_is_5x_core(self, schema):
+        """Glow radius = core × 5 (GLOW_SCALE)."""
+        from p_logo.exporters.node_colors import (
+            node_core_radius, node_glow_radius, GLOW_SCALE,
+        )
+        r = schema.r_green
+        for d in range(1, 7):
+            cr = node_core_radius(r, d)
+            gr = node_glow_radius(cr)
+            assert gr == pytest.approx(cr * GLOW_SCALE, rel=1e-6)
+
+    def test_glow_opacity_scales_with_degree(self, schema):
+        """Higher degree → higher glow opacity."""
+        from p_logo.exporters.node_colors import node_glow_opacity
+        opacities = [node_glow_opacity(d) for d in range(1, 7)]
+        for i in range(len(opacities) - 1):
+            assert opacities[i] < opacities[i + 1]
+
+    def test_compute_degrees_sum(self, schema):
+        """Sum of degrees = 2 × edge_count (handshaking lemma)."""
+        from p_logo.exporters.node_colors import compute_degrees
+        degrees = compute_degrees(schema)
+        assert sum(degrees) == 2 * schema.edge_count

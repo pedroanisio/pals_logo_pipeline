@@ -1,13 +1,26 @@
-"""Node color resolution — shared between HTML and SVG exporters.
+"""Node color and sizing resolution — shared between HTML and SVG exporters.
 
-Applies geometric rules (based on composition_point and key_node) to
-assign a color key to each node.  Color keys are upper-case strings
-(e.g. "AMBER") that map to palette entries via COLOR_KEY_TO_PALETTE.
+Color: geometric rules (based on composition_point and key_node) assign a
+color key to each node.  Keys are upper-case strings (e.g. "AMBER") that
+map to palette entries via COLOR_KEY_TO_PALETTE.
+
+Sizing: the canonical model is degree-scaled via a √2-chain derived from
+r_green (the single free parameter).  This matches the Three.js animated
+render in animated_revision.html.
+
+    R_VERTEX = r_green × (√2 − 1)
+    BASE_R   = R_VERTEX × 0.035
+    core_r(d) = BASE_R × (√2)^(d − 1)
+    glow_r(d) = core_r × GLOW_SCALE
+    glow_opacity(d) = GLOW_BASE_OPACITY + GLOW_DEG_BOOST × d
 """
 
 from __future__ import annotations
 
-from p_logo.types import Node
+import math
+from collections import Counter
+
+from p_logo.types import Node, PLogoSchema
 
 
 # ── Color key → palette name ─────────────────────────────────
@@ -81,3 +94,43 @@ ARC_STYLES: list[dict[str, object]] = [
 
 # Edge color by type
 EDGE_COLOR: str = "COPPER"
+
+
+# ── Canonical degree-based sizing ────────────────────────────
+# From animated_revision.html — the single source of truth for
+# node radii.  All values derive from r_green via the √2-chain.
+
+_BASE_R_FACTOR = 0.035   # BASE_R = R_VERTEX × this
+GLOW_SCALE = 5.0         # glow_r = core_r × this
+GLOW_BASE_OPACITY = 0.4  # glow_opacity = this + DEG_BOOST × degree
+GLOW_DEG_BOOST = 0.08
+
+
+def compute_degrees(schema: PLogoSchema) -> list[int]:
+    """Compute per-node degree from schema edges."""
+    counts: Counter[int] = Counter()
+    for e in schema.edges:
+        counts[e.from_id] += 1
+        counts[e.to_id] += 1
+    return [counts.get(i, 0) for i in range(len(schema.nodes))]
+
+
+def node_core_radius(r_green: float, degree: int) -> float:
+    """Canonical core radius for a node of given degree.
+
+    r_core(d) = R_VERTEX × 0.035 × (√2)^(d − 1)
+    where R_VERTEX = r_green × (√2 − 1).
+    """
+    r_vertex = r_green * (math.sqrt(2) - 1)
+    base_r = r_vertex * _BASE_R_FACTOR
+    return base_r * math.pow(math.sqrt(2), degree - 1)
+
+
+def node_glow_radius(core_r: float) -> float:
+    """Glow radius from core radius."""
+    return core_r * GLOW_SCALE
+
+
+def node_glow_opacity(degree: int) -> float:
+    """Per-node glow opacity scaled by degree."""
+    return GLOW_BASE_OPACITY + GLOW_DEG_BOOST * degree

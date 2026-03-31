@@ -14,115 +14,84 @@ import sys
 from argparse import ArgumentParser
 
 
-def generate_composition(scale=1.0, origin_x=0, origin_y=0):
-    """
-    Generate complete geometric composition with named shapes and points
-    
-    Args:
-        scale: Scaling factor for all dimensions (default: 1.0)
-        origin_x: X offset for frame of reference (default: 0)
-        origin_y: Y offset for frame of reference (default: 0)
-    
-    Returns:
-        dict: Complete composition data including shapes, points, and intersections
-    """
-    
-    # =====================================================================
-    # COMPOSITION DATA STRUCTURE
-    # =====================================================================
-    
-    composition = {
-        "metadata": {
-            "canvas_width": 1200,
-            "canvas_height": 1200,
-            "scale": scale,
-            "origin_x": origin_x,
-            "origin_y": origin_y,
-            "dpi": 100
-        },
-        "shapes": {},
-        "points": {},
-        "intersections": []
-    }
-    
-    # =====================================================================
-    # BASE PARAMETERS (Before scaling)
-    # =====================================================================
-    
+def _build_base_params(scale, origin_x, origin_y):
+    """Compute base parameters and coordinate transform."""
     R_A = 200
-    center_A_x_base, center_A_y_base = 600, 800
     side_B = 2 * R_A
     half_side = side_B / 2
-    
-    # Apply scaling and frame of reference
+
     def apply_transform(x, y):
         return (x * scale + origin_x, y * scale + origin_y)
-    
-    center_A_x, center_A_y = apply_transform(center_A_x_base, center_A_y_base)
+
+    center_A_x, center_A_y = apply_transform(600, 800)
     R_A_scaled = R_A * scale
-    
-    # =====================================================================
-    # SHAPES DEFINITIONS
-    # =====================================================================
-    
-    # Outer Circle
-    outer_circle_center = apply_transform(600, 600)
-    composition["shapes"]["Outer.Circle"] = {
-        "type": "circle",
-        "name": "Outer Circle",
-        "center": {"x": outer_circle_center[0], "y": outer_circle_center[1]},
-        "radius": 600 * scale,
-        "color": "red",
-        "linewidth": 2,
-        "style": "solid"
-    }
-    
-    # Circ.A
-    composition["shapes"]["Circ.A"] = {
-        "type": "circle",
-        "name": "Circ.A",
-        "center": {"x": center_A_x, "y": center_A_y},
-        "radius": R_A_scaled,
-        "color": "blue",
-        "linewidth": 2,
-        "style": "solid"
-    }
-    
-    # Square.B
+
     square_B_left = (600 - half_side) * scale + origin_x
     square_B_right = (600 + half_side) * scale + origin_x
     square_B_bottom = (800 - half_side) * scale + origin_y
     square_B_top = (800 + half_side) * scale + origin_y
-    
-    composition["shapes"]["Square.B"] = {
-        "type": "square",
-        "name": "Square.B",
+
+    inradius_square_A = R_A_scaled / np.sqrt(2)
+
+    angles = np.array([45, 135, 225, 315]) * np.pi / 180
+    vertices_x = (600 + 200 * np.cos(angles)) * scale + origin_x
+    vertices_y = (800 + 200 * np.sin(angles)) * scale + origin_y
+
+    return {
+        "scale": scale, "origin_x": origin_x, "origin_y": origin_y,
+        "R_A": R_A, "R_A_scaled": R_A_scaled, "side_B": side_B,
+        "apply_transform": apply_transform,
+        "center_A_x": center_A_x, "center_A_y": center_A_y,
+        "square_B_left": square_B_left, "square_B_right": square_B_right,
+        "square_B_bottom": square_B_bottom, "square_B_top": square_B_top,
+        "inradius_square_A": inradius_square_A,
+        "vertices_x": vertices_x, "vertices_y": vertices_y,
+    }
+
+
+def _build_shapes(p):
+    """Build all shape definitions from base parameters."""
+    shapes = {}
+    scale = p["scale"]
+    apply_transform = p["apply_transform"]
+    center_A_x, center_A_y = p["center_A_x"], p["center_A_y"]
+    square_B_left, square_B_right = p["square_B_left"], p["square_B_right"]
+    square_B_bottom, square_B_top = p["square_B_bottom"], p["square_B_top"]
+    inradius_square_A = p["inradius_square_A"]
+    vertices_x, vertices_y = p["vertices_x"], p["vertices_y"]
+
+    # Outer Circle
+    outer_circle_center = apply_transform(600, 600)
+    shapes["Outer.Circle"] = {
+        "type": "circle", "name": "Outer Circle",
+        "center": {"x": outer_circle_center[0], "y": outer_circle_center[1]},
+        "radius": 600 * scale, "color": "red", "linewidth": 2, "style": "solid"
+    }
+
+    # Circ.A
+    shapes["Circ.A"] = {
+        "type": "circle", "name": "Circ.A",
+        "center": {"x": center_A_x, "y": center_A_y},
+        "radius": p["R_A_scaled"], "color": "blue", "linewidth": 2, "style": "solid"
+    }
+
+    # Square.B
+    shapes["Square.B"] = {
+        "type": "square", "name": "Square.B",
         "origin": {"x": square_B_left, "y": square_B_top},
-        "width": side_B * scale,
-        "height": side_B * scale,
+        "width": p["side_B"] * scale, "height": p["side_B"] * scale,
         "vertices": {
             "upper_left": {"x": square_B_left, "y": square_B_top},
             "upper_right": {"x": square_B_right, "y": square_B_top},
             "lower_left": {"x": square_B_left, "y": square_B_bottom},
             "lower_right": {"x": square_B_right, "y": square_B_bottom}
         },
-        "color": "black",
-        "linewidth": 1,
-        "style": "dotted"
+        "color": "black", "linewidth": 1, "style": "dotted"
     }
-    
-    # Square.A vertices (inscribed in Circ.A)
-    inradius_square_A = R_A_scaled / np.sqrt(2)
-    angles = np.array([45, 135, 225, 315]) * np.pi / 180
-    vertices_x_base = 600 + 200 * np.cos(angles)
-    vertices_y_base = 800 + 200 * np.sin(angles)
-    
-    vertices_x = vertices_x_base * scale + origin_x
-    vertices_y = vertices_y_base * scale + origin_y
-    
-    composition["shapes"]["Square.A"] = {
-        "type": "square",
-        "name": "Square.A",
+
+    # Square.A (inscribed in Circ.A)
+    shapes["Square.A"] = {
+        "type": "square", "name": "Square.A",
         "center": {"x": center_A_x, "y": center_A_y},
         "vertices": {
             "V1_right": {"x": float(vertices_x[0]), "y": float(vertices_y[0])},
@@ -130,80 +99,61 @@ def generate_composition(scale=1.0, origin_x=0, origin_y=0):
             "V3_bottom_left": {"x": float(vertices_x[2]), "y": float(vertices_y[2])},
             "V4_bottom_right": {"x": float(vertices_x[3]), "y": float(vertices_y[3])}
         },
-        "color": "green",
-        "linewidth": 2,
-        "style": "solid"
+        "color": "green", "linewidth": 2, "style": "solid"
     }
-    
+
     # Vertex circles at Square.A vertices
     vertex_circle_radius = None
+    top_vertex_y = None
     for i, (vx, vy) in enumerate(zip(vertices_x, vertices_y)):
-        dist_to_left = vx - square_B_left
-        dist_to_right = square_B_right - vx
-        dist_to_bottom = vy - square_B_bottom
-        dist_to_top = square_B_top - vy
-        radius = min(dist_to_left, dist_to_right, dist_to_bottom, dist_to_top)
-        
+        radius = min(
+            vx - square_B_left, square_B_right - vx,
+            vy - square_B_bottom, square_B_top - vy,
+        )
         if i == 0:
             vertex_circle_radius = radius
             top_vertex_y = vy
-        
-        vertex_names = ["Circ.V1", "Circ.V2", "Circ.V3", "Circ.V4"]
-        composition["shapes"][vertex_names[i]] = {
-            "type": "circle",
-            "name": vertex_names[i],
+
+        shapes[f"Circ.V{i+1}"] = {
+            "type": "circle", "name": f"Circ.V{i+1}",
             "center": {"x": float(vx), "y": float(vy)},
-            "radius": float(radius),
-            "color": "purple",
-            "linewidth": 1,
-            "style": "solid"
+            "radius": float(radius), "color": "purple", "linewidth": 1, "style": "solid"
         }
-    
-    # Circ.C (top)
+
     bottom_vertex_y = vertices_y[2]
-    composition["shapes"]["Circ.C"] = {
-        "type": "circle",
-        "name": "Circ.C",
+
+    # Circ.C (top) and Circ.C' (bottom)
+    shapes["Circ.C"] = {
+        "type": "circle", "name": "Circ.C",
         "center": {"x": center_A_x, "y": float(top_vertex_y)},
         "radius": float(vertex_circle_radius),
-        "color": "orange",
-        "linewidth": 1.5,
-        "style": "solid"
+        "color": "orange", "linewidth": 1.5, "style": "solid"
     }
-    
-    # Circ.C' (bottom)
-    composition["shapes"]["Circ.C'"] = {
-        "type": "circle",
-        "name": "Circ.C'",
+    shapes["Circ.C'"] = {
+        "type": "circle", "name": "Circ.C'",
         "center": {"x": center_A_x, "y": float(bottom_vertex_y)},
         "radius": float(vertex_circle_radius),
-        "color": "brown",
-        "linewidth": 1.5,
-        "style": "solid"
+        "color": "brown", "linewidth": 1.5, "style": "solid"
     }
-    
-    # Green dotted circle (bounds of Square.A)
-    composition["shapes"]["Circ.Bounds.A"] = {
-        "type": "circle",
-        "name": "Circle touching Square.A bounds",
+
+    # Circ.Bounds.A (inradius of Square.A)
+    shapes["Circ.Bounds.A"] = {
+        "type": "circle", "name": "Circle touching Square.A bounds",
         "center": {"x": center_A_x, "y": center_A_y},
         "radius": float(inradius_square_A),
-        "color": "green",
-        "linewidth": 0.8,
-        "style": "dotted"
+        "color": "green", "linewidth": 0.8, "style": "dotted"
     }
-    
+
     # Square.D
+    d_offset = inradius_square_A / np.sqrt(2)
     square_D_vertices = [
-        (center_A_x + inradius_square_A/np.sqrt(2), center_A_y + inradius_square_A/np.sqrt(2)),
-        (center_A_x - inradius_square_A/np.sqrt(2), center_A_y + inradius_square_A/np.sqrt(2)),
-        (center_A_x - inradius_square_A/np.sqrt(2), center_A_y - inradius_square_A/np.sqrt(2)),
-        (center_A_x + inradius_square_A/np.sqrt(2), center_A_y - inradius_square_A/np.sqrt(2))
+        (center_A_x + d_offset, center_A_y + d_offset),
+        (center_A_x - d_offset, center_A_y + d_offset),
+        (center_A_x - d_offset, center_A_y - d_offset),
+        (center_A_x + d_offset, center_A_y - d_offset),
     ]
-    
-    composition["shapes"]["Square.D"] = {
-        "type": "square",
-        "name": "Square.D",
+    shapes["Square.D"] = {
+        "type": "square", "name": "Square.D",
         "center": {"x": center_A_x, "y": center_A_y},
         "vertices": {
             "D1_top_right": {"x": float(square_D_vertices[0][0]), "y": float(square_D_vertices[0][1])},
@@ -211,149 +161,176 @@ def generate_composition(scale=1.0, origin_x=0, origin_y=0):
             "D3_bottom_left": {"x": float(square_D_vertices[2][0]), "y": float(square_D_vertices[2][1])},
             "D4_bottom_right": {"x": float(square_D_vertices[3][0]), "y": float(square_D_vertices[3][1])}
         },
-        "color": "chocolate",
-        "linewidth": 1.5,
-        "style": "solid"
+        "color": "chocolate", "linewidth": 1.5, "style": "solid"
     }
-    
+
     # Circ.D
     inradius_square_D = inradius_square_A / np.sqrt(2)  # = R_A / 2
-    composition["shapes"]["Circ.D"] = {
-        "type": "circle",
-        "name": "Circ.D",
+    shapes["Circ.D"] = {
+        "type": "circle", "name": "Circ.D",
         "center": {"x": center_A_x, "y": center_A_y},
         "radius": float(inradius_square_D),
-        "color": "darkred",
-        "linewidth": 1.5,
-        "style": "solid"
+        "color": "darkred", "linewidth": 1.5, "style": "solid"
     }
-    
+
     # Rectangle
     rect_width = 2 * vertex_circle_radius
-    rect_height = 3 * R_A * scale  # = 6 × inradius_square_A
+    rect_height = 3 * p["R_A"] * scale  # = 6 × inradius_square_A
     rect_origin_x = square_B_left
     rect_origin_y = square_B_top
     rect_y_position = rect_origin_y - rect_height
-    
-    composition["shapes"]["Rect.1"] = {
-        "type": "rectangle",
-        "name": "Rectangle",
+
+    shapes["Rect.1"] = {
+        "type": "rectangle", "name": "Rectangle",
         "origin": {"x": float(rect_origin_x), "y": float(rect_origin_y)},
-        "width": float(rect_width),
-        "height": float(rect_height),
+        "width": float(rect_width), "height": float(rect_height),
         "vertices": {
             "upper_left": {"x": float(rect_origin_x), "y": float(rect_origin_y)},
             "upper_right": {"x": float(rect_origin_x + rect_width), "y": float(rect_origin_y)},
             "lower_left": {"x": float(rect_origin_x), "y": float(rect_y_position)},
             "lower_right": {"x": float(rect_origin_x + rect_width), "y": float(rect_y_position)}
         },
-        "color": "navy",
-        "linewidth": 1.5,
-        "style": "solid"
+        "color": "navy", "linewidth": 1.5, "style": "solid"
     }
-    
+
     # Vertex circle at rectangle bottom (external)
     circ_rect_center_x = rect_origin_x + rect_width / 2
     circ_rect_center_y = rect_y_position - vertex_circle_radius
-    
-    composition["shapes"]["Circ.Rect.V"] = {
-        "type": "circle",
-        "name": "Vertex circle at rectangle bottom",
+
+    shapes["Circ.Rect.V"] = {
+        "type": "circle", "name": "Vertex circle at rectangle bottom",
         "center": {"x": float(circ_rect_center_x), "y": float(circ_rect_center_y)},
         "radius": float(vertex_circle_radius),
-        "color": "darkviolet",
-        "linewidth": 1,
-        "style": "solid"
+        "color": "darkviolet", "linewidth": 1, "style": "solid"
     }
-    
+
     # Inscribed circle in rectangle (tangent to bottom)
     circ_inscribed_rect_center_y = rect_y_position + vertex_circle_radius
-    
-    composition["shapes"]["Circ.Rect.I"] = {
-        "type": "circle",
-        "name": "Inscribed circle in rectangle",
+
+    shapes["Circ.Rect.I"] = {
+        "type": "circle", "name": "Inscribed circle in rectangle",
         "center": {"x": float(circ_rect_center_x), "y": float(circ_inscribed_rect_center_y)},
         "radius": float(vertex_circle_radius),
-        "color": "crimson",
-        "linewidth": 1,
-        "style": "solid"
+        "color": "crimson", "linewidth": 1, "style": "solid"
     }
-    
-    # =====================================================================
-    # NAMED POINTS (Tangent and intersection points)
-    # =====================================================================
-    
-    points = {
+
+    # Derived geometry needed by _build_named_points and _build_intersections
+    derived = {
+        "outer_circle_center": outer_circle_center,
+        "vertex_circle_radius": vertex_circle_radius,
+        "top_vertex_y": top_vertex_y,
+        "bottom_vertex_y": bottom_vertex_y,
+        "square_D_vertices": square_D_vertices,
+        "rect_width": rect_width, "rect_origin_x": rect_origin_x,
+        "rect_origin_y": rect_origin_y, "rect_y_position": rect_y_position,
+        "circ_rect_center_x": circ_rect_center_x,
+        "circ_rect_center_y": circ_rect_center_y,
+        "circ_inscribed_rect_center_y": circ_inscribed_rect_center_y,
+    }
+    return shapes, derived
+
+
+def _build_named_points(p, derived):
+    """Build all named point definitions."""
+    center_A_x, center_A_y = p["center_A_x"], p["center_A_y"]
+    square_B_left, square_B_right = p["square_B_left"], p["square_B_right"]
+    square_B_bottom, square_B_top = p["square_B_bottom"], p["square_B_top"]
+    vertices_x, vertices_y = p["vertices_x"], p["vertices_y"]
+    d = derived
+
+    return {
         # Centers
         "P.CENTER.A": {"x": center_A_x, "y": center_A_y, "description": "Circ.A center"},
-        "P.CENTER.OUTER": {"x": outer_circle_center[0], "y": outer_circle_center[1], "description": "Outer Circle center"},
-        
+        "P.CENTER.OUTER": {"x": d["outer_circle_center"][0], "y": d["outer_circle_center"][1], "description": "Outer Circle center"},
+
         # Square.B corners (also Circ.A tangent points)
         "P.SQAB.UL": {"x": square_B_left, "y": square_B_top, "description": "Square.B upper left"},
         "P.SQAB.UR": {"x": square_B_right, "y": square_B_top, "description": "Square.B upper right"},
         "P.SQAB.LL": {"x": square_B_left, "y": square_B_bottom, "description": "Square.B lower left"},
         "P.SQAB.LR": {"x": square_B_right, "y": square_B_bottom, "description": "Square.B lower right"},
-        
+
         # Circ.A tangent points with Square.B
         "P.CA.TANGENT.BOTTOM": {"x": center_A_x, "y": square_B_bottom, "description": "Circ.A tangent Square.B bottom"},
         "P.CA.TANGENT.TOP": {"x": center_A_x, "y": square_B_top, "description": "Circ.A tangent Square.B top"},
         "P.CA.TANGENT.LEFT": {"x": square_B_left, "y": center_A_y, "description": "Circ.A tangent Square.B left"},
         "P.CA.TANGENT.RIGHT": {"x": square_B_right, "y": center_A_y, "description": "Circ.A tangent Square.B right"},
-        
+
         # Square.A vertices (Circ.A intersections)
         "P.SQA.V1": {"x": float(vertices_x[0]), "y": float(vertices_y[0]), "description": "Square.A vertex 1 (right)"},
         "P.SQA.V2": {"x": float(vertices_x[1]), "y": float(vertices_y[1]), "description": "Square.A vertex 2 (top-left)"},
         "P.SQA.V3": {"x": float(vertices_x[2]), "y": float(vertices_y[2]), "description": "Square.A vertex 3 (bottom-left)"},
         "P.SQA.V4": {"x": float(vertices_x[3]), "y": float(vertices_y[3]), "description": "Square.A vertex 4 (bottom-right)"},
-        
+
         # Circ.C tangent point
-        "P.CC.CENTER": {"x": center_A_x, "y": float(top_vertex_y), "description": "Circ.C center"},
-        
+        "P.CC.CENTER": {"x": center_A_x, "y": float(d["top_vertex_y"]), "description": "Circ.C center"},
+
         # Circ.C' tangent point
-        "P.CCP.CENTER": {"x": center_A_x, "y": float(bottom_vertex_y), "description": "Circ.C' center"},
-        
+        "P.CCP.CENTER": {"x": center_A_x, "y": float(d["bottom_vertex_y"]), "description": "Circ.C' center"},
+
         # Square.D vertices
-        "P.SQD.D1": {"x": float(square_D_vertices[0][0]), "y": float(square_D_vertices[0][1]), "description": "Square.D vertex D1"},
-        "P.SQD.D2": {"x": float(square_D_vertices[1][0]), "y": float(square_D_vertices[1][1]), "description": "Square.D vertex D2"},
-        "P.SQD.D3": {"x": float(square_D_vertices[2][0]), "y": float(square_D_vertices[2][1]), "description": "Square.D vertex D3"},
-        "P.SQD.D4": {"x": float(square_D_vertices[3][0]), "y": float(square_D_vertices[3][1]), "description": "Square.D vertex D4"},
-        
+        "P.SQD.D1": {"x": float(d["square_D_vertices"][0][0]), "y": float(d["square_D_vertices"][0][1]), "description": "Square.D vertex D1"},
+        "P.SQD.D2": {"x": float(d["square_D_vertices"][1][0]), "y": float(d["square_D_vertices"][1][1]), "description": "Square.D vertex D2"},
+        "P.SQD.D3": {"x": float(d["square_D_vertices"][2][0]), "y": float(d["square_D_vertices"][2][1]), "description": "Square.D vertex D3"},
+        "P.SQD.D4": {"x": float(d["square_D_vertices"][3][0]), "y": float(d["square_D_vertices"][3][1]), "description": "Square.D vertex D4"},
+
         # Rectangle corners
-        "P.RECT.UL": {"x": float(rect_origin_x), "y": float(rect_origin_y), "description": "Rectangle upper left"},
-        "P.RECT.UR": {"x": float(rect_origin_x + rect_width), "y": float(rect_origin_y), "description": "Rectangle upper right"},
-        "P.RECT.LL": {"x": float(rect_origin_x), "y": float(rect_y_position), "description": "Rectangle lower left"},
-        "P.RECT.LR": {"x": float(rect_origin_x + rect_width), "y": float(rect_y_position), "description": "Rectangle lower right"},
-        
+        "P.RECT.UL": {"x": float(d["rect_origin_x"]), "y": float(d["rect_origin_y"]), "description": "Rectangle upper left"},
+        "P.RECT.UR": {"x": float(d["rect_origin_x"] + d["rect_width"]), "y": float(d["rect_origin_y"]), "description": "Rectangle upper right"},
+        "P.RECT.LL": {"x": float(d["rect_origin_x"]), "y": float(d["rect_y_position"]), "description": "Rectangle lower left"},
+        "P.RECT.LR": {"x": float(d["rect_origin_x"] + d["rect_width"]), "y": float(d["rect_y_position"]), "description": "Rectangle lower right"},
+
         # Rectangle circles tangent points
-        "P.CIRC.RECT.V.CENTER": {"x": float(circ_rect_center_x), "y": float(circ_rect_center_y), "description": "Vertex circle at rectangle bottom center"},
-        "P.CIRC.RECT.I.CENTER": {"x": float(circ_rect_center_x), "y": float(circ_inscribed_rect_center_y), "description": "Inscribed circle in rectangle center"},
-        "P.CIRC.RECT.TANGENT": {"x": float(circ_rect_center_x), "y": float(rect_y_position), "description": "Both rectangle circles tangent point"},
+        "P.CIRC.RECT.V.CENTER": {"x": float(d["circ_rect_center_x"]), "y": float(d["circ_rect_center_y"]), "description": "Vertex circle at rectangle bottom center"},
+        "P.CIRC.RECT.I.CENTER": {"x": float(d["circ_rect_center_x"]), "y": float(d["circ_inscribed_rect_center_y"]), "description": "Inscribed circle in rectangle center"},
+        "P.CIRC.RECT.TANGENT": {"x": float(d["circ_rect_center_x"]), "y": float(d["rect_y_position"]), "description": "Both rectangle circles tangent point"},
     }
-    
-    composition["points"] = points
-    
-    # =====================================================================
-    # INTERSECTION RECORDS
-    # =====================================================================
-    
-    intersections = [
+
+
+def _build_intersections():
+    """Build intersection records between shapes."""
+    return [
         {"name": "Circ.A ∩ Square.A", "point": "P.SQA.V1", "shapes": ["Circ.A", "Square.A"]},
         {"name": "Circ.A ∩ Square.A", "point": "P.SQA.V2", "shapes": ["Circ.A", "Square.A"]},
         {"name": "Circ.A ∩ Square.A", "point": "P.SQA.V3", "shapes": ["Circ.A", "Square.A"]},
         {"name": "Circ.A ∩ Square.A", "point": "P.SQA.V4", "shapes": ["Circ.A", "Square.A"]},
-        
+
         {"name": "Circ.A tangent Square.B", "point": "P.CA.TANGENT.BOTTOM", "shapes": ["Circ.A", "Square.B"]},
         {"name": "Circ.A tangent Square.B", "point": "P.CA.TANGENT.TOP", "shapes": ["Circ.A", "Square.B"]},
         {"name": "Circ.A tangent Square.B", "point": "P.CA.TANGENT.LEFT", "shapes": ["Circ.A", "Square.B"]},
         {"name": "Circ.A tangent Square.B", "point": "P.CA.TANGENT.RIGHT", "shapes": ["Circ.A", "Square.B"]},
-        
+
         {"name": "Circ.Rect.V tangent Rect.1", "point": "P.CIRC.RECT.TANGENT", "shapes": ["Circ.Rect.V", "Rect.1"]},
         {"name": "Circ.Rect.I tangent Rect.1", "point": "P.CIRC.RECT.TANGENT", "shapes": ["Circ.Rect.I", "Rect.1"]},
     ]
-    
-    composition["intersections"] = intersections
-    
-    return composition
+
+
+def generate_composition(scale=1.0, origin_x=0, origin_y=0):
+    """
+    Generate complete geometric composition with named shapes and points.
+
+    Args:
+        scale: Scaling factor for all dimensions (default: 1.0)
+        origin_x: X offset for frame of reference (default: 0)
+        origin_y: Y offset for frame of reference (default: 0)
+
+    Returns:
+        dict: Complete composition data including shapes, points, and intersections
+    """
+    params = _build_base_params(scale, origin_x, origin_y)
+    shapes, derived = _build_shapes(params)
+    points = _build_named_points(params, derived)
+    intersections = _build_intersections()
+
+    return {
+        "metadata": {
+            "canvas_width": 1200, "canvas_height": 1200,
+            "scale": scale, "origin_x": origin_x, "origin_y": origin_y,
+            "dpi": 100,
+        },
+        "shapes": shapes,
+        "points": points,
+        "intersections": intersections,
+    }
 
 
 def create_figure(composition, output_file="geometric_composition.png"):

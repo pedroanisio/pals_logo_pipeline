@@ -4,6 +4,10 @@ Produces a static SVG that mirrors the Three.js animated render's visual
 hierarchy: colored nodes, multi-band ring, arc blooms, glow halos,
 nebula clouds, star field, and nib detail — all derived from the shared
 palette and color-resolution rules.
+
+Glow effects use radial gradients (matching the Three.js sprite_glow
+material) rather than gaussian blur, giving sharper falloff and better
+visual fidelity to the animated render.
 """
 
 from __future__ import annotations
@@ -18,9 +22,14 @@ from p_logo.exporters.node_colors import (
     ARC_STYLES,
     COLOR_KEY_TO_PALETTE,
     EDGE_COLOR,
+    compute_degrees,
+    node_core_radius,
+    node_glow_radius,
+    node_glow_opacity,
 )
 from p_logo_pipeline.palette import (
     COLORS,
+    MATERIAL_TEMPLATES,
     OPACITY_DEFAULTS,
     SIZING,
     NEBULA_SPECS,
@@ -75,34 +84,71 @@ EDGE_STYLES: dict[str, tuple[float, float]] = {
     "nib":     (0.06, 0.60),
 }
 
+_SVG_NIB_GLOW_SCALE = 2.5
+
 
 # ── SVG element builders ────────────────────────────────────
 
-def _build_defs(size: int, r_to_svg, to_svg, schema: PLogoSchema) -> list[str]:
-    """Build <defs> section: gradients and filters."""
+def _build_defs(
+    size: int, r_to_svg, to_svg, schema: PLogoSchema,
+) -> list[str]:
+    """Build <defs> section: gradients, filters, clip paths."""
     els: list[str] = []
     els.append("  <defs>")
 
-    # Gaussian blur filter for node glows
-    blur_std = r_to_svg(0.25)
+    # ── Gaussian blur filter (nib ball glow only) ──
+    blur_std = r_to_svg(0.08)
     els.append(f'    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">')
     els.append(f'      <feGaussianBlur stdDeviation="{blur_std:.1f}" result="blur"/>')
     els.append(f'    </filter>')
 
-    # Larger blur for arc bloom
-    arc_blur = r_to_svg(0.12)
+    # ── Arc bloom filter (reduced) ──
+    arc_blur = r_to_svg(0.045)
     els.append(f'    <filter id="arc-bloom" x="-30%" y="-30%" width="160%" height="160%">')
     els.append(f'      <feGaussianBlur stdDeviation="{arc_blur:.1f}" result="blur"/>')
     els.append(f'    </filter>')
 
-    # Nebula cloud radial gradients
+    # ── Per-node radial gradients for glows ──
+    # Each node gets its own gradient because glow opacity is degree-dependent.
+    # Gradient shape (stop offsets) matches palette sprite_glow material.
+    glow_stops = MATERIAL_TEMPLATES["sprite_glow"]["gradient_stops"]
+    degrees = compute_degrees(schema)
+
+    for node in schema.nodes:
+        if node.id == 14:
+            continue
+        color_key = resolve_node_color(node)
+        color = _hex(color_key)
+        deg = degrees[node.id]
+        base_opacity = node_glow_opacity(deg)
+        els.append(f'    <radialGradient id="glow-n{node.id}">')
+        for stop in glow_stops:
+            pct = stop["offset"] * 100
+            opacity = base_opacity * stop["opacity_factor"]
+            els.append(f'      <stop offset="{pct:.0f}%" '
+                       f'stop-color="{color}" stop-opacity="{opacity:.3f}"/>')
+        els.append(f'    </radialGradient>')
+
+    # ── Nebula cloud radial gradients (steeper falloff) ──
     for i, nc in enumerate(NEBULA_SPECS["colors"]):
         color = _palette_hex(nc["color"])
         alpha = nc["alpha"]
         els.append(f'    <radialGradient id="nebula-{i}">')
-        els.append(f'      <stop offset="0%" stop-color="{color}" stop-opacity="{alpha:.3f}"/>')
-        els.append(f'      <stop offset="100%" stop-color="{color}" stop-opacity="0"/>')
+        els.append(f'      <stop offset="0%" stop-color="{color}" '
+                   f'stop-opacity="{alpha:.3f}"/>')
+        els.append(f'      <stop offset="40%" stop-color="{color}" '
+                   f'stop-opacity="{alpha * 0.4:.4f}"/>')
+        els.append(f'      <stop offset="100%" stop-color="{color}" '
+                   f'stop-opacity="0"/>')
         els.append(f'    </radialGradient>')
+
+    # ── Clip path for inner-circle effects ──
+    circle_r = SIZING["circle_fill_radius"]
+    scx, scy = to_svg(0, 0)
+    cr = r_to_svg(circle_r)
+    els.append(f'    <clipPath id="circle-clip">')
+    els.append(f'      <circle cx="{scx:.1f}" cy="{scy:.1f}" r="{cr:.1f}"/>')
+    els.append(f'    </clipPath>')
 
     els.append("  </defs>")
     return els
@@ -113,34 +159,37 @@ def _build_background(size: int) -> list[str]:
     return [f'  <rect width="{size}" height="{size}" fill="{_palette_hex("background")}"/>']
 
 
-def _build_nebula(size: int, to_svg, r_to_svg) -> list[str]:
-    """Nebula clouds — radial gradient circles behind the main circle."""
-    els: list[str] = []
-    rng = random.Random(42)  # deterministic
-    pos_min = NEBULA_SPECS["position_range"]["min"]
-    pos_max = NEBULA_SPECS["position_range"]["max"]
-    rad_min = NEBULA_SPECS["radius_range"]["min"]
-    rad_max = NEBULA_SPECS["radius_range"]["max"]
-
-    for i in range(NEBULA_SPECS["count"]):
-        # Position in normalized [0,1] space → schema coords
-        nx = rng.uniform(pos_min, pos_max)
-        ny = rng.uniform(pos_min, pos_max)
-        # Map to SVG coords via canvas center
-        sx = nx * size
-        sy = ny * size
-        rad = rng.uniform(rad_min, rad_max) * size
-        els.append(f'  <circle cx="{sx:.1f}" cy="{sy:.1f}" r="{rad:.1f}" '
-                   f'fill="url(#nebula-{i})"/>')
-    return els
-
-
 def _build_circle_fill(to_svg, r_to_svg, circle_r: float) -> list[str]:
     """Dark circle fill."""
     scx, scy = to_svg(0, 0)
     cr = r_to_svg(circle_r)
     return [f'  <circle cx="{scx:.1f}" cy="{scy:.1f}" r="{cr:.1f}" '
             f'fill="{_palette_hex("deep")}"/>']
+
+
+def _build_nebula(size: int, to_svg, r_to_svg) -> list[str]:
+    """Nebula clouds — subtle atmospheric color inside the circle."""
+    els: list[str] = []
+    rng = random.Random(42)  # deterministic
+    scx, scy = to_svg(0, 0)
+    circle_r = SIZING["circle_fill_radius"]
+    cr = r_to_svg(circle_r)
+
+    # Clipped group keeps nebula inside the circle
+    els.append(f'  <g clip-path="url(#circle-clip)">')
+
+    for i in range(NEBULA_SPECS["count"]):
+        # Place within the circle bounds (offset from center)
+        angle = rng.uniform(0, 2 * math.pi)
+        dist = rng.uniform(0.1, 0.6) * cr
+        sx = scx + dist * math.cos(angle)
+        sy = scy + dist * math.sin(angle)
+        rad = rng.uniform(0.15, 0.30) * cr
+        els.append(f'    <circle cx="{sx:.1f}" cy="{sy:.1f}" r="{rad:.1f}" '
+                   f'fill="url(#nebula-{i})"/>')
+
+    els.append(f'  </g>')
+    return els
 
 
 def _build_star_field(to_svg, r_to_svg, circle_r: float) -> list[str]:
@@ -221,10 +270,10 @@ def _build_shimmer(to_svg, r_to_svg) -> list[str]:
 
 
 def _build_arc_blooms(schema: PLogoSchema, to_svg, r_to_svg) -> list[str]:
-    """Thick semi-transparent arc layer behind main arcs."""
+    """Subtle bloom layer behind main arcs."""
     els: list[str] = []
-    bloom_opacity = OPACITY_DEFAULTS["arc_bloom"]["base"]
-    bloom_width = r_to_svg(SIZING["arc_bloom_thickness"])
+    bloom_opacity = OPACITY_DEFAULTS["arc_bloom"]["base"] * 0.6
+    bloom_width = r_to_svg(SIZING["arc_bloom_thickness"] * 0.7)
 
     for i, arc in enumerate(schema.arcs):
         style = ARC_STYLES[i]
@@ -232,7 +281,7 @@ def _build_arc_blooms(schema: PLogoSchema, to_svg, r_to_svg) -> list[str]:
         pts = _arc_polyline_points(arc, to_svg)
         els.append(f'  <polyline points="{" ".join(pts)}" '
                    f'fill="none" stroke="{color}" stroke-width="{bloom_width:.1f}" '
-                   f'stroke-opacity="{bloom_opacity}" stroke-linecap="round" '
+                   f'stroke-opacity="{bloom_opacity:.3f}" stroke-linecap="round" '
                    f'filter="url(#arc-bloom)"/>')
     return els
 
@@ -318,7 +367,7 @@ def _build_nib(schema: PLogoSchema, to_svg, r_to_svg) -> list[str]:
     # Nib ball — glow halo then core
     bx, by = to_svg(*nib.ball_pos)
     ball_r = r_to_svg(nib.ball_radius)
-    glow_r = ball_r * 4
+    glow_r = ball_r * _SVG_NIB_GLOW_SCALE
     glow_opacity = OPACITY_DEFAULTS["nib_ball"]["glow"]
     core_opacity = OPACITY_DEFAULTS["nib_ball"]["core"]
     els.append(f'  <circle cx="{bx:.1f}" cy="{by:.1f}" r="{glow_r:.1f}" '
@@ -329,36 +378,40 @@ def _build_nib(schema: PLogoSchema, to_svg, r_to_svg) -> list[str]:
 
 
 def _build_node_glows(schema: PLogoSchema, to_svg, r_to_svg) -> list[str]:
-    """Glow halos behind nodes (filtered gaussian blur)."""
+    """Glow halos behind nodes using per-node radial gradient fills.
+
+    Glow radius = core_radius × GLOW_SCALE, both derived from node degree
+    via the canonical √2-chain formula.
+    """
     els: list[str] = []
-    glow_scale = SIZING["node_glow_scale"]
-    glow_opacity = OPACITY_DEFAULTS["node_glow"]["base"]
+    degrees = compute_degrees(schema)
 
     for node in schema.nodes:
         if node.id == 14:
             continue
-        color_key = resolve_node_color(node)
-        color = _hex(color_key)
+        deg = degrees[node.id]
+        core_r = node_core_radius(schema.r_green, deg)
+        glow_r = r_to_svg(node_glow_radius(core_r))
         sx, sy = to_svg(node.x, node.y)
-        base_r = 0.14 if node.key_node else 0.09
-        glow_r = r_to_svg(base_r * glow_scale)
         els.append(f'  <circle cx="{sx:.1f}" cy="{sy:.1f}" r="{glow_r:.1f}" '
-                   f'fill="{color}" fill-opacity="{glow_opacity}" filter="url(#glow)"/>')
+                   f'fill="url(#glow-n{node.id})"/>')
     return els
 
 
 def _build_nodes(schema: PLogoSchema, to_svg, r_to_svg) -> list[str]:
-    """Colored node circles."""
+    """Colored node circles with degree-based radii."""
     els: list[str] = []
     core_opacity = OPACITY_DEFAULTS["node_core"]["base"]
+    degrees = compute_degrees(schema)
 
     for node in schema.nodes:
         if node.id == 14:
             continue
         color_key = resolve_node_color(node)
         color = _hex(color_key)
+        deg = degrees[node.id]
+        sr = r_to_svg(node_core_radius(schema.r_green, deg))
         sx, sy = to_svg(node.x, node.y)
-        sr = r_to_svg(0.14 if node.key_node else 0.09)
         els.append(f'  <circle cx="{sx:.1f}" cy="{sy:.1f}" r="{sr:.1f}" '
                    f'fill="{color}" fill-opacity="{core_opacity}"/>')
     return els
@@ -390,8 +443,8 @@ def export_svg(
     # Layers (back to front)
     els.extend(_build_defs(size, r_to_svg, to_svg, schema))
     els.extend(_build_background(size))
-    els.extend(_build_nebula(size, to_svg, r_to_svg))
     els.extend(_build_circle_fill(to_svg, r_to_svg, circle_r))
+    els.extend(_build_nebula(size, to_svg, r_to_svg))
     els.extend(_build_star_field(to_svg, r_to_svg, circle_r))
     els.extend(_build_ring(to_svg, r_to_svg))
     els.extend(_build_shimmer(to_svg, r_to_svg))

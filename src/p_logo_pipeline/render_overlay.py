@@ -17,60 +17,50 @@ import json, math, sys
 from pathlib import Path
 
 
-def build_overlay() -> str:
-    build_dir = Path(__file__).parent / "build"
-    
+def _load_artifacts(build_dir: Path) -> tuple:
+    """Load all upstream JSON artifacts."""
     with open(build_dir / "palette.json") as f: palette = json.load(f)
     with open(build_dir / "point_field.json") as f: field = json.load(f)
     with open(build_dir / "projection.json") as f: proj = json.load(f)
     with open(build_dir / "layout.json") as f: layout = json.load(f)
     with open(build_dir / "animations.json") as f: anims = json.load(f)
+    return palette, field, proj, layout, anims
 
-    # ── Extract data ──
+
+def _extract_data(palette, field, proj, layout, anims) -> dict:
+    """Extract and serialize all JS data blocks from pipeline artifacts."""
     colors = palette["colors"]
-    bg_hex = colors["background"]["hex"]
-    meta = field["metadata"]
-    
     co = layout["center_offset"]
-    
-    # Construction shapes for Plane A rendering
+
     shapes_js = json.dumps(field["shapes"])
     points_js = json.dumps(field["points"])
-    
-    # Projection mapping: which field points became nodes
+
     selected_points = {n["source_point"]: n["index"] for n in proj["nodes"]}
     selected_js = json.dumps(selected_points)
-    
-    # Projection edges
     proj_edges_js = json.dumps(proj["edges"])
-    
-    # Node data from layout (with offset applied)
-    layout_nodes = [el for el in layout["elements"] if el["type"] == "node"]
-    layout_nodes.sort(key=lambda n: n["index"])
+
+    layout_nodes = sorted(
+        [el for el in layout["elements"] if el["type"] == "node"],
+        key=lambda n: n["index"],
+    )
     nodes_js = json.dumps([{"x": n["x"], "y": n["y"], "color": n["color"],
                             "radius": n["radius"], "degree": n["degree"]}
                            for n in layout_nodes])
-    
-    # Edges from layout
+
     layout_edges = [el for el in layout["elements"] if el["type"] == "edge"]
     edges_js = json.dumps([{"x1": e["x1"], "y1": e["y1"], "x2": e["x2"], "y2": e["y2"]}
                            for e in layout_edges])
-    
-    # Arcs from layout
-    layout_arcs = [el for el in layout["elements"] if el["type"] == "arc"]
-    layout_arcs.sort(key=lambda a: a["index"])
-    
-    # Nib elements
-    nib_fans = [el for el in layout["elements"] if el["type"] == "nib_fan_line"]
-    nib_outlines = [el for el in layout["elements"] if el["type"] == "nib_outline_line"]
-    nib_center = [el for el in layout["elements"] if el["type"] == "nib_center_line"]
-    nib_accents = [el for el in layout["elements"] if el["type"] == "nib_accent_node"]
-    nib_ball = [el for el in layout["elements"] if el["type"] == "junction_ball"]
-    
-    all_nib = nib_fans + nib_outlines + nib_center + nib_accents + nib_ball
+
+    layout_arcs = sorted(
+        [el for el in layout["elements"] if el["type"] == "arc"],
+        key=lambda a: a["index"],
+    )
+
+    nib_types = ["nib_fan_line", "nib_outline_line", "nib_center_line",
+                 "nib_accent_node", "junction_ball"]
+    all_nib = [el for el in layout["elements"] if el["type"] in nib_types]
     nib_js = json.dumps(all_nib)
-    
-    # Arc data for rendering
+
     arcs_render = []
     for arc in layout_arcs:
         arcs_render.append({
@@ -82,20 +72,14 @@ def build_overlay() -> str:
                     for p in arc["points"]],
         })
     arcs_js = json.dumps(arcs_render)
-    
-    # Ring data
-    ring = layout["ring"]
-    ring_js = json.dumps(ring)
-    
-    # Animation params
-    wave = anims["systems"]["wave"]
-    adj_js = json.dumps(wave["adjacency"])
-    
+
+    ring_js = json.dumps(layout["ring"])
+    adj_js = json.dumps(anims["systems"]["wave"]["adjacency"])
+
     supp = anims.get("supplementary", {})
     particle_count = supp.get("particles", {}).get("count", 70)
     shimmer_count = supp.get("shimmer", {}).get("count", 3)
-    
-    # Color hex map for JS
+
     color_map = {name: c["hex"].lstrip("#") for name, c in colors.items()}
     color_map_js = json.dumps(color_map)
 
@@ -105,13 +89,22 @@ def build_overlay() -> str:
         for nc in palette["nebula"]["colors"]
     ])
 
-    return f'''<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PAL's Notes — Construction Overlay</title>
-<style>
+    return {
+        "bg_hex": colors["background"]["hex"],
+        "co": co,
+        "shapes_js": shapes_js, "points_js": points_js,
+        "selected_js": selected_js, "proj_edges_js": proj_edges_js,
+        "nodes_js": nodes_js, "edges_js": edges_js, "arcs_js": arcs_js,
+        "nib_js": nib_js, "ring_js": ring_js, "adj_js": adj_js,
+        "color_map": color_map, "color_map_js": color_map_js,
+        "star_count": star_count, "nebula_colors_js": nebula_colors_js,
+        "particle_count": particle_count, "shimmer_count": shimmer_count,
+    }
+
+
+def _overlay_css(bg_hex: str, color_map: dict) -> str:
+    """Generate the CSS block for the overlay page."""
+    return f'''<style>
 * {{ margin:0; padding:0; box-sizing:border-box; }}
 body {{
   background: {bg_hex};
@@ -146,36 +139,25 @@ canvas, #three-canvas {{
   color: #{color_map["rose_gold"]}; opacity:0;
   transition: opacity 1s ease;
 }}
-</style>
-</head>
-<body>
-<div id="container">
-  <canvas id="bg-canvas"></canvas>
-  <canvas id="star-canvas"></canvas>
-  <canvas id="construct-canvas"></canvas>
-  <canvas id="three-canvas"></canvas>
-  <div id="brand-text">PAL\\'s Notes</div>
-  <div id="phase-label"></div>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script>
-(function() {{
-"use strict";
+</style>'''
 
-// ═══ DATA ═══
-const CMAP = {color_map_js};
-const FIELD_SHAPES = {shapes_js};
-const FIELD_POINTS = {points_js};
-const SELECTED = {selected_js};
-const PROJ_EDGES = {proj_edges_js};
-const NODES = {nodes_js};
-const EDGES = {edges_js};
-const ARCS = {arcs_js};
-const NIB = {nib_js};
-const RING = {ring_js};
-const ADJ = {adj_js};
-const NEBULA_COLORS = {nebula_colors_js};
-const CO_Y = {co["y"]};
+
+def _overlay_js_data(d: dict) -> str:
+    """Generate the JS data block declarations."""
+    return f'''// ═══ DATA ═══
+const CMAP = {d["color_map_js"]};
+const FIELD_SHAPES = {d["shapes_js"]};
+const FIELD_POINTS = {d["points_js"]};
+const SELECTED = {d["selected_js"]};
+const PROJ_EDGES = {d["proj_edges_js"]};
+const NODES = {d["nodes_js"]};
+const EDGES = {d["edges_js"]};
+const ARCS = {d["arcs_js"]};
+const NIB = {d["nib_js"]};
+const RING = {d["ring_js"]};
+const ADJ = {d["adj_js"]};
+const NEBULA_COLORS = {d["nebula_colors_js"]};
+const CO_Y = {d["co"]["y"]};
 
 function hexC(name) {{ return parseInt(CMAP[name] || "6EC4A8", 16); }}
 function hexS(name) {{ return "#" + (CMAP[name] || "6EC4A8"); }}
@@ -200,9 +182,12 @@ resize();
 // Map logo space (≈ -5..5) to canvas pixels
 function toCanvasX(x) {{ return (x / 12 + 0.5) * conC.width; }}
 function toCanvasY(y) {{ return (0.5 - y / 12) * conC.height; }}
-function toCanvasR(r) {{ return r / 12 * conC.width; }}
+function toCanvasR(r) {{ return r / 12 * conC.width; }}'''
 
-// ═══ BACKGROUND ═══
+
+def _overlay_js_background(bg_hex: str, star_count: int) -> str:
+    """Generate the background and star rendering JS."""
+    return f'''// ═══ BACKGROUND ═══
 const nebClouds = [];
 for (let i=0; i<7; i++) {{
   nebClouds.push({{
@@ -243,10 +228,13 @@ function drawStars(t) {{
     starCtx.beginPath(); starCtx.arc(s.x*w,s.y*h,s.s,0,Math.PI*2);
     starCtx.fillStyle=`rgba(255,240,216,${{b}})`; starCtx.fill();
   }}
-}}
+}}'''
 
-// ═══ PLANE A: CONSTRUCTION DRAWING (2D Canvas) ═══
-function drawConstruction(t, alpha) {{
+
+def _overlay_js_construction() -> str:
+    """Generate the Plane A construction drawing JS (2D Canvas)."""
+    return '''// ═══ PLANE A: CONSTRUCTION DRAWING (2D Canvas) ═══
+function drawConstruction(t, alpha) {
   const ctx = conCtx;
   const w = conC.width, h = conC.height;
   ctx.clearRect(0,0,w,h);
@@ -258,7 +246,7 @@ function drawConstruction(t, alpha) {{
   // Draw construction circles
   const circleShapes = ["Circ.A", "Circ.D", "Circ.Mid"];
   const circleColors = ["#D09058", "#6EC4A8", "#F0B85C"];
-  circleShapes.forEach((name, i) => {{
+  circleShapes.forEach((name, i) => {
     const s = FIELD_SHAPES[name];
     if (!s) return;
     ctx.beginPath();
@@ -268,27 +256,27 @@ function drawConstruction(t, alpha) {{
             toCanvasR(s.radius), 0, Math.PI*2);
     ctx.stroke();
     ctx.setLineDash([]);
-  }});
+  });
 
   // Draw vertex circles
-  for (let i=1; i<=4; i++) {{
+  for (let i=1; i<=4; i++) {
     const s = FIELD_SHAPES["Circ.V"+i];
     if (!s) continue;
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(123,168,232,${{alpha*0.5}})`;
+    ctx.strokeStyle = `rgba(123,168,232,${alpha*0.5})`;
     ctx.setLineDash([3, 5]);
     ctx.arc(toCanvasX(s.center.x), toCanvasY(s.center.y + CO_Y),
             toCanvasR(s.radius), 0, Math.PI*2);
     ctx.stroke();
     ctx.setLineDash([]);
-  }}
+  }
 
   // Draw Square.B
   const sqB = FIELD_SHAPES["Square.B"];
-  if (sqB) {{
+  if (sqB) {
     const v = sqB.vertices;
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(212,151,110,${{alpha*0.4}})`;
+    ctx.strokeStyle = `rgba(212,151,110,${alpha*0.4})`;
     ctx.setLineDash([6, 4]);
     ctx.moveTo(toCanvasX(v.UL.x), toCanvasY(v.UL.y + CO_Y));
     ctx.lineTo(toCanvasX(v.UR.x), toCanvasY(v.UR.y + CO_Y));
@@ -296,27 +284,27 @@ function drawConstruction(t, alpha) {{
     ctx.lineTo(toCanvasX(v.LL.x), toCanvasY(v.LL.y + CO_Y));
     ctx.closePath(); ctx.stroke();
     ctx.setLineDash([]);
-  }}
+  }
 
   // Draw Square.C
   const sqC = FIELD_SHAPES["Square.C"];
-  if (sqC) {{
+  if (sqC) {
     const v = sqC.vertices;
     const keys = ["V1_TR","V2_TL","V3_BL","V4_BR"];
     ctx.beginPath();
-    ctx.strokeStyle = `rgba(110,196,168,${{alpha*0.4}})`;
+    ctx.strokeStyle = `rgba(110,196,168,${alpha*0.4})`;
     ctx.setLineDash([5, 3]);
-    keys.forEach((k,i) => {{
+    keys.forEach((k,i) => {
       const fn = i===0 ? 'moveTo' : 'lineTo';
       ctx[fn](toCanvasX(v[k].x), toCanvasY(v[k].y + CO_Y));
-    }});
+    });
     ctx.closePath(); ctx.stroke();
     ctx.setLineDash([]);
-  }}
+  }
 
   // Draw ALL field points (small dots)
   const ptKeys = Object.keys(FIELD_POINTS);
-  ptKeys.forEach((name, i) => {{
+  ptKeys.forEach((name, i) => {
     const pt = FIELD_POINTS[name];
     const isSelected = SELECTED[name] !== undefined;
     const cx = toCanvasX(pt.x);
@@ -329,7 +317,7 @@ function drawConstruction(t, alpha) {{
 
     ctx.globalAlpha = ptAlpha;
 
-    if (isSelected) {{
+    if (isSelected) {
       // Selected points get a highlight ring
       ctx.beginPath();
       ctx.strokeStyle = '#F0B85C';
@@ -337,42 +325,45 @@ function drawConstruction(t, alpha) {{
       ctx.arc(cx, cy, 6, 0, Math.PI*2);
       ctx.stroke();
       ctx.lineWidth = 1;
-    }}
+    }
 
     // Point dot
     ctx.beginPath();
-    ctx.fillStyle = isSelected ? '#FFF0D8' : `rgba(110,196,168,${{ptAlpha*0.7}})`;
+    ctx.fillStyle = isSelected ? '#FFF0D8' : `rgba(110,196,168,${ptAlpha*0.7})`;
     ctx.arc(cx, cy, isSelected ? 3 : 2, 0, Math.PI*2);
     ctx.fill();
 
     // Label (only during construction phase)
-    if (alpha > 0.3 && ptAlpha > 0.5) {{
-      ctx.font = `${{Math.max(8, conC.width * 0.009)}}px Georgia`;
-      ctx.fillStyle = `rgba(212,151,110,${{ptAlpha*0.5}})`;
+    if (alpha > 0.3 && ptAlpha > 0.5) {
+      ctx.font = `${Math.max(8, conC.width * 0.009)}px Georgia`;
+      ctx.fillStyle = `rgba(212,151,110,${ptAlpha*0.5})`;
       ctx.textAlign = 'left';
       ctx.fillText(name.replace('P.',''), cx + 6, cy - 4);
-    }}
-  }});
+    }
+  });
 
   // Draw projection edges (connections between selected points)
-  if (t > 5) {{
+  if (t > 5) {
     const edgeAlpha = Math.min(1, (t - 5) * 0.5) * alpha;
     ctx.globalAlpha = edgeAlpha;
-    ctx.strokeStyle = `rgba(110,196,168,${{edgeAlpha*0.3}})`;
+    ctx.strokeStyle = `rgba(110,196,168,${edgeAlpha*0.3})`;
     ctx.lineWidth = 1;
-    PROJ_EDGES.forEach(([a,b]) => {{
+    PROJ_EDGES.forEach(([a,b]) => {
       const na = NODES[a], nb = NODES[b];
       ctx.beginPath();
       ctx.moveTo(toCanvasX(na.x), toCanvasY(na.y));
       ctx.lineTo(toCanvasX(nb.x), toCanvasY(nb.y));
       ctx.stroke();
-    }});
-  }}
+    });
+  }
 
   ctx.globalAlpha = 1;
-}}
+}'''
 
-// ═══ THREE.JS SETUP (PLANE B) ═══
+
+def _overlay_js_scene(shimmer_count: int, particle_count: int) -> str:
+    """Generate Three.js setup, helpers, and Plane B logo objects."""
+    return f'''// ═══ THREE.JS SETUP (PLANE B) ═══
 const threeCanvas = document.getElementById('three-canvas');
 const scene = new THREE.Scene();
 const frustum = 6;
@@ -512,57 +503,60 @@ for(let i=0;i<{particle_count};i++) {{
 }}
 
 // Energy rings
-const energyRings=[]; let lastRing=0;
+const energyRings=[]; let lastRing=0;'''
 
-// ═══ PHASE MANAGEMENT ═══
-const PHASE_TIMES = {{ constructIn: 0, highlight: 4, crossfade: 8, logoFull: 12 }};
 
-function getPhaseAlphas(t) {{
+def _overlay_js_animation() -> str:
+    """Generate phase management, wave, and animation loop JS."""
+    return '''// ═══ PHASE MANAGEMENT ═══
+const PHASE_TIMES = { constructIn: 0, highlight: 4, crossfade: 8, logoFull: 12 };
+
+function getPhaseAlphas(t) {
   let planeA, planeB;
-  if (t < PHASE_TIMES.constructIn + 0.5) {{
+  if (t < PHASE_TIMES.constructIn + 0.5) {
     planeA = 0; planeB = 0;
-  }} else if (t < PHASE_TIMES.highlight) {{
+  } else if (t < PHASE_TIMES.highlight) {
     planeA = Math.min(1, (t - 0.5) * 0.4);
     planeB = 0;
-  }} else if (t < PHASE_TIMES.crossfade) {{
+  } else if (t < PHASE_TIMES.crossfade) {
     planeA = 1;
     planeB = Math.min(0.6, (t - PHASE_TIMES.highlight) * 0.15);
-  }} else if (t < PHASE_TIMES.logoFull) {{
+  } else if (t < PHASE_TIMES.logoFull) {
     const p = (t - PHASE_TIMES.crossfade) / (PHASE_TIMES.logoFull - PHASE_TIMES.crossfade);
     planeA = 1 - p;
     planeB = 0.6 + p * 0.4;
-  }} else {{
+  } else {
     planeA = 0;
     planeB = 1;
-  }}
-  return {{ planeA, planeB }};
-}}
+  }
+  return { planeA, planeB };
+}
 
-function getPhaseLabel(t) {{
+function getPhaseLabel(t) {
   if (t < 0.5) return '';
   if (t < PHASE_TIMES.highlight) return 'PLANE A — CONSTRUCTION FIELD';
   if (t < PHASE_TIMES.crossfade) return 'PLANE B — PROJECTION';
   if (t < PHASE_TIMES.logoFull) return 'MATERIALIZING';
   return '';
-}}
+}
 
 // ═══ WAVE ═══
 let waveTimer = 99;
-function triggerWave(t) {{
+function triggerWave(t) {
   const start=Math.floor(Math.random()*23);
-  const queue=[{{node:start,depth:0}}], visited=new Set([start]);
-  while(queue.length>0) {{
-    const {{node,depth}}=queue.shift();
+  const queue=[{node:start,depth:0}], visited=new Set([start]);
+  while(queue.length>0) {
+    const {node,depth}=queue.shift();
     nodeMeshes[node].waveStart=t+depth*0.1;
-    for(const nb of ADJ[node]) {{ if(!visited.has(nb)) {{ visited.add(nb); queue.push({{node:nb,depth:depth+1}}); }} }}
-  }}
-}}
+    for(const nb of ADJ[node]) { if(!visited.has(nb)) { visited.add(nb); queue.push({node:nb,depth:depth+1}); } }
+  }
+}
 
 // ═══ ANIMATION LOOP ═══
 const clock = new THREE.Clock();
 let prevTime = 0;
 
-function animate() {{
+function animate() {
   requestAnimationFrame(animate);
   const t = clock.getElapsedTime();
   const dt = Math.min(t - prevTime, 0.05);
@@ -583,42 +577,42 @@ function animate() {{
 
   // Plane B: Logo
   logoGroup.visible = alphas.planeB > 0.01;
-  if (logoGroup.visible) {{
+  if (logoGroup.visible) {
     // Apply opacity to the entire group via material traversal
-    logoGroup.traverse(obj => {{
-      if (obj.material) {{
+    logoGroup.traverse(obj => {
+      if (obj.material) {
         if (obj._baseOpacity === undefined) obj._baseOpacity = obj.material.opacity;
         obj.material.opacity = obj._baseOpacity * alphas.planeB;
-      }}
-    }});
+      }
+    });
 
     const bs = 1.0 + Math.sin(t*0.4)*0.008;
     logoGroup.scale.set(bs,bs,1);
 
     // Shimmer
-    shimmerArcs.forEach((m,i) => {{
+    shimmerArcs.forEach((m,i) => {
       m.rotation.z += 0.0015*(i%2===0?1:-1);
-    }});
+    });
 
     // Only run full animations after logo is materialized
-    if (t > PHASE_TIMES.logoFull) {{
+    if (t > PHASE_TIMES.logoFull) {
       // Wave
       waveTimer += dt;
-      if (waveTimer > 4) {{ waveTimer=0; triggerWave(t); }}
-      nodeMeshes.forEach(nm => {{
-        if(nm.waveStart!==undefined&&t>=nm.waveStart) {{
+      if (waveTimer > 4) { waveTimer=0; triggerWave(t); }
+      nodeMeshes.forEach(nm => {
+        if(nm.waveStart!==undefined&&t>=nm.waveStart) {
           const el=t-nm.waveStart;
-          if(el<0.8) {{ const p=el/0.8; nm.waveIntensity=Math.max(0,Math.pow(2,-10*p)*Math.sin((p-0.1)*5*Math.PI)+1)*0.5; }}
-          else {{ nm.waveIntensity*=0.93; if(nm.waveIntensity<0.01){{nm.waveIntensity=0;nm.waveStart=undefined;}} }}
-        }}
+          if(el<0.8) { const p=el/0.8; nm.waveIntensity=Math.max(0,Math.pow(2,-10*p)*Math.sin((p-0.1)*5*Math.PI)+1)*0.5; }
+          else { nm.waveIntensity*=0.93; if(nm.waveIntensity<0.01){nm.waveIntensity=0;nm.waveStart=undefined;} }
+        }
         const s=1+(nm.waveIntensity||0)*0.5;
         nm.core.scale.set(s,s,1); nm.glow.scale.set(s,s,1);
-      }});
+      });
 
       // Pulses
-      pulses.forEach(p => {{
+      pulses.forEach(p => {
         p.t+=p.speed*dt;
-        if(p.t>=1){{p.t=0;p.edgeIdx=Math.floor(Math.random()*EDGES.length);}}
+        if(p.t>=1){p.t=0;p.edgeIdx=Math.floor(Math.random()*EDGES.length);}
         const e=EDGES[p.edgeIdx];
         const px=NODES[PROJ_EDGES[p.edgeIdx]?PROJ_EDGES[p.edgeIdx][0]:0];
         const ex=e.x1+(e.x2-e.x1)*p.t, ey=e.y1+(e.y2-e.y1)*p.t;
@@ -627,50 +621,95 @@ function animate() {{
         const f=p.t<0.15?p.t/0.15:(p.t>0.85?(1-p.t)/0.15:1);
         p.core.material.opacity=Math.max(0,f*0.65);
         p.glow.material.opacity=Math.max(0,f*0.2);
-      }});
+      });
 
       // Ink drops
-      if(t-lastInk>0.3+Math.random()*0.5) {{
-        for(const d of inkDrops) {{
-          if(!d.active) {{
+      if(t-lastInk>0.3+Math.random()*0.5) {
+        for(const d of inkDrops) {
+          if(!d.active) {
             d.active=true; d.x=inkOrigin.x+(Math.random()-0.5)*0.06; d.y=inkOrigin.y;
             d.vx=(Math.random()-0.5)*0.2; d.vy=-0.4-Math.random()*0.6;
             d.life=0; d.maxLife=1+Math.random()*1.2; break;
-          }}
-        }}
+          }
+        }
         lastInk=t;
-      }}
-      inkDrops.forEach(d => {{
+      }
+      inkDrops.forEach(d => {
         if(!d.active) return;
         d.life+=dt; d.vy-=1.2*dt; d.vx*=0.97; d.vy*=0.97;
         d.x+=d.vx*dt; d.y+=d.vy*dt;
         d.mesh.position.set(d.x,d.y,0.5);
         const lr=d.life/d.maxLife;
         d.mesh.material.opacity=Math.max(0,lr<0.1?lr/0.1*0.6:0.6*(1-(lr-0.1)/0.9));
-        if(d.life>=d.maxLife){{d.active=false;d.mesh.material.opacity=0;}}
-      }});
+        if(d.life>=d.maxLife){d.active=false;d.mesh.material.opacity=0;}
+      });
 
       // Energy rings
-      if(t-lastRing>4) {{
+      if(t-lastRing>4) {
         const geo=new THREE.RingGeometry(0.3,0.36,48);
-        const mat=new THREE.MeshBasicMaterial({{color:hexC('copper'),transparent:true,opacity:0.25,side:THREE.DoubleSide}});
+        const mat=new THREE.MeshBasicMaterial({color:hexC('copper'),transparent:true,opacity:0.25,side:THREE.DoubleSide});
         const m=new THREE.Mesh(geo,mat); m.position.z=0.1; logoGroup.add(m);
-        energyRings.push({{mesh:m,life:0}}); lastRing=t;
-      }}
-      for(let i=energyRings.length-1;i>=0;i--) {{
+        energyRings.push({mesh:m,life:0}); lastRing=t;
+      }
+      for(let i=energyRings.length-1;i>=0;i--) {
         const r=energyRings[i]; r.life+=dt;
         const s=1+r.life*3; r.mesh.scale.set(s,s,1);
         r.mesh.material.opacity=Math.max(0,0.25*(1-r.life/2.5));
-        if(r.life>2.5){{logoGroup.remove(r.mesh);r.mesh.geometry.dispose();r.mesh.material.dispose();energyRings.splice(i,1);}}
-      }}
-    }}
-  }}
+        if(r.life>2.5){logoGroup.remove(r.mesh);r.mesh.geometry.dispose();r.mesh.material.dispose();energyRings.splice(i,1);}
+      }
+    }
+  }
 
   renderer.render(scene,camera);
-}}
+}
 
 drawBg(0); drawStars(0);
-animate();
+animate();'''
+
+
+def build_overlay() -> str:
+    build_dir = Path(__file__).parent / "build"
+    palette, field, proj, layout, anims = _load_artifacts(build_dir)
+    d = _extract_data(palette, field, proj, layout, anims)
+
+    css = _overlay_css(d["bg_hex"], d["color_map"])
+    js_data = _overlay_js_data(d)
+    js_bg = _overlay_js_background(d["bg_hex"], d["star_count"])
+    js_construction = _overlay_js_construction()
+    js_scene = _overlay_js_scene(d["shimmer_count"], d["particle_count"])
+    js_animation = _overlay_js_animation()
+
+    return f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PAL's Notes — Construction Overlay</title>
+{css}
+</head>
+<body>
+<div id="container">
+  <canvas id="bg-canvas"></canvas>
+  <canvas id="star-canvas"></canvas>
+  <canvas id="construct-canvas"></canvas>
+  <canvas id="three-canvas"></canvas>
+  <div id="brand-text">PAL\\'s Notes</div>
+  <div id="phase-label"></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function() {{
+"use strict";
+
+{js_data}
+
+{js_bg}
+
+{js_construction}
+
+{js_scene}
+
+{js_animation}
 }})();
 </script>
 </body>
