@@ -10,59 +10,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from p_logo.types import PLogoSchema
-
-
-# ── Node color rules ──────────────────────────────────────────
-# Applied in order; first match wins.
-# Each rule is (predicate_fn, color_key).
-
-def _is_nib_tip(node) -> bool:
-    return node.composition_point == "P.CIRC.RECT.V.CENTER"
-
-def _is_corner_accent(node) -> bool:
-    return node.composition_point == "P.SQAB.UL" and not node.key_node
-
-def _is_bump_hub(node) -> bool:
-    return node.composition_point == "P.BUMP.HUB"
-
-def _is_arc_anchor(node) -> bool:
-    if not node.key_node:
-        return False
-    bronze_points = {
-        "P.CA.TANGENT.BOTTOM", "P.CA.TANGENT.RIGHT",
-        "P.RECT.LR", "P.RECT.UR",
-    }
-    return node.composition_point in bronze_points
-
-def _is_key(node) -> bool:
-    return node.key_node
-
-
-_COLOR_RULES = [
-    (_is_nib_tip,       "WARMWHT"),
-    (_is_corner_accent, "BLUEGLOW"),
-    (_is_bump_hub,      "AMBER"),
-    (_is_arc_anchor,    "BRONZE"),
-    (_is_key,           "AMBER"),
-]
-_DEFAULT_COLOR = "COPPER"
-
-
-def _resolve_node_color(node) -> str:
-    """Apply color rules to a node, return the color key string."""
-    for predicate, color in _COLOR_RULES:
-        if predicate(node):
-            return color
-    return _DEFAULT_COLOR
-
-
-# ── Arc style config ──────────────────────────────────────────
-
-_ARC_STYLES = [
-    {"color": "AMBER",  "opacity": 0.7},   # Green arc → Amber
-    {"color": "COPPER", "opacity": 0.6},   # Blue arc  → Copper
-    {"color": "BRONZE", "opacity": 0.55},  # Gold arc  → Bronze
-]
+from p_logo.exporters.node_colors import resolve_node_color, ARC_STYLES
 
 
 # ── Schema → JS data ─────────────────────────────────────────
@@ -78,7 +26,7 @@ def schema_to_js_data(schema: PLogoSchema) -> dict:
     # Nodes
     wire_nodes = []
     for node in schema.nodes:
-        col = _resolve_node_color(node)
+        col = resolve_node_color(node)
         # N24 (bump hub) is key_node=False in schema but sz=1 in revision HTML
         sz = 1 if node.key_node or node.composition_point == "P.BUMP.HUB" else 0
         wire_nodes.append({
@@ -94,7 +42,7 @@ def schema_to_js_data(schema: PLogoSchema) -> dict:
     # Arcs
     arc_defs = []
     for i, arc in enumerate(schema.arcs):
-        style = _ARC_STYLES[i]
+        style = ARC_STYLES[i]
         arc_defs.append({
             "cx": arc.cx,
             "cy": arc.cy,
