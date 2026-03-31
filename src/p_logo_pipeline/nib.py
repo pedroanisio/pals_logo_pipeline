@@ -1,18 +1,16 @@
 """
 PAL's Notes Logo Pipeline — Step 2: Nib
 
-Generates the pen nib geometry: a fountain pen nib at the bottom of the
-P's stem, consisting of fan lines radiating from the tip, a diamond
-outline, a center line (blue glow), accent nodes, a warm-white junction
-ball, and an ink emission origin.
+Generates the pen nib aesthetic geometry: fan lines, outline, center line
+(blue glow), accent nodes, a warm-white junction ball, and an ink emission
+origin.
 
-The nib is parametric from four values:
-  - tip_y:      Y coordinate of the nib's lowest point
-  - top_y:      Y coordinate where the nib meets the stem
-  - half_width: half the lateral span at the widest point
-  - fan_count:  number of fan lines per side (excluding center line)
+Key structural coordinates (center_x, tip, waist/shoulders, ball position,
+slit geometry) are derived from the canonical PLogoSchema.nib — the single
+source of truth for nib shape. Aesthetic parameters (fan count, colors,
+opacities, thicknesses) come from the palette.
 
-Input:  build/palette.json
+Input:  build/palette.json, PLogoSchema (imported)
 Output: build/nib.json
 """
 
@@ -24,27 +22,24 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from p_logo import build_schema
+from p_logo.types import PLogoSchema
+
 
 # ──────────────────────────────────────────────
-# Default parameters
+# Schema-derived structural defaults
 # ──────────────────────────────────────────────
 
-DEFAULT_TIP_Y: float = -4.0
-DEFAULT_TOP_Y: float = -3.1
-DEFAULT_HALF_WIDTH: float = 0.55
+_SCHEMA = build_schema()
+
+# Structural anchor points — all derived from PLogoSchema.nib
+DEFAULT_CENTER_X: float = _SCHEMA.nib.outline[0][0]
+DEFAULT_TIP_Y: float = _SCHEMA.nib.outline[0][1]
+DEFAULT_TOP_Y: float = _SCHEMA.nib.outline[1][1]
+DEFAULT_HALF_WIDTH: float = _SCHEMA.nib.outline[1][0] - _SCHEMA.nib.outline[0][0]
+
+# Aesthetic free parameter (schema has no opinion on fan count)
 DEFAULT_FAN_COUNT: int = 3
-
-# Center X derived from the point field (stem_x = x_sqB_left)
-from pathlib import Path as _P
-import json as _json
-_ff = _P(__file__).parent / "build" / "point_field.json"
-if _ff.exists():
-    with open(_ff) as _f:
-        _meta = _json.load(_f)["metadata"]
-        DEFAULT_CENTER_X: float = _meta["derived"].get("x_sqA_v2",
-                                   _meta["derived"].get("stem_x", -0.88))
-else:
-    DEFAULT_CENTER_X: float = -0.88
 
 
 # ──────────────────────────────────────────────
@@ -53,21 +48,10 @@ else:
 
 def validate(
     palette: dict,
-    tip_y: float = DEFAULT_TIP_Y,
-    top_y: float = DEFAULT_TOP_Y,
-    half_width: float = DEFAULT_HALF_WIDTH,
     fan_count: int = DEFAULT_FAN_COUNT,
 ) -> list[str]:
     """Validate nib parameters. Returns list of errors (empty = pass)."""
     errors: list[str] = []
-
-    if tip_y >= top_y:
-        errors.append(
-            f"tip_y ({tip_y}) must be below top_y ({top_y}) — inverted or equal"
-        )
-
-    if half_width <= 0:
-        errors.append(f"half_width ({half_width}) must be positive")
 
     if fan_count < 1:
         errors.append(f"fan_count ({fan_count}) must be >= 1")
@@ -99,31 +83,34 @@ def validate(
 # ──────────────────────────────────────────────
 
 def _build_fan_lines(
-    center_x: float,
-    tip_y: float,
-    top_y: float,
-    half_width: float,
+    schema_nib,
     fan_count: int,
     palette: dict,
 ) -> list[dict[str, Any]]:
     """Build symmetric fan lines radiating from tip to upper spread points.
 
+    Tip and shoulder coordinates are derived from schema.nib.outline.
     fan_count lines per side, evenly distributed from the innermost
     fraction of half_width to the full half_width.
     """
     thickness = palette["sizing"]["nib_line_thickness"]["fan"]
     opacity = palette["opacity_defaults"]["nib_line"]["fan"]
 
+    tip = schema_nib.outline[0]
+    center_x = tip[0]
+    tip_y = tip[1]
+    shoulder_y = schema_nib.outline[1][1]
+    half_width = schema_nib.outline[1][0] - center_x
+
     lines: list[dict[str, Any]] = []
 
     for i in range(fan_count):
-        # Fraction from 0 (innermost) to 1 (outermost)
         frac = (i + 1) / fan_count
 
         dx = half_width * frac
-        # Outermost lines end slightly lower than innermost
+        # Outermost lines end slightly beyond the shoulder
         dy_offset = frac * 0.15
-        end_y = top_y + dy_offset
+        end_y = shoulder_y + dy_offset
 
         # Right side
         lines.append({
@@ -150,67 +137,50 @@ def _build_fan_lines(
     return lines
 
 
-def _build_diamond_outline(
-    center_x: float,
-    tip_y: float,
-    top_y: float,
-    half_width: float,
+def _build_outline(
+    schema_nib,
     palette: dict,
 ) -> list[dict[str, Any]]:
-    """Build the diamond (rhombus) outline of the nib.
+    """Build outline from schema nib vertices.
 
-    Four vertices:
-      - Top:    (center_x, top_y)
-      - Right:  (center_x + half_width, mid_y + offset)
-      - Bottom: (center_x, bottom_diamond_y)  — between tip and top
-      - Left:   (center_x - half_width, mid_y + offset)
+    The schema outline is a 5-point closed polygon (4 unique vertices):
+      tip → right_shoulder → waist_middle → left_shoulder → tip
+
+    This produces 4 line segments matching the schema's kite shape.
     """
     thickness = palette["sizing"]["nib_line_thickness"]["outline"]
     opacity = palette["opacity_defaults"]["nib_line"]["outline"]
 
-    mid_y = (tip_y + top_y) / 2
-    # Diamond waist sits slightly above geometric midpoint
-    waist_y = mid_y + (top_y - tip_y) * 0.1
-    # Bottom vertex sits between tip and top
-    bottom_y = mid_y - (top_y - tip_y) * 0.15
+    outline = schema_nib.outline  # 5 points (last = first for closure)
 
-    top_vertex = (center_x, top_y)
-    right_vertex = (center_x + half_width, waist_y)
-    bottom_vertex = (center_x, bottom_y)
-    left_vertex = (center_x - half_width, waist_y)
-
-    def make_line(v1: tuple, v2: tuple) -> dict:
-        return {
+    lines: list[dict[str, Any]] = []
+    for i in range(4):
+        v1 = outline[i]
+        v2 = outline[i + 1]
+        lines.append({
             "x1": v1[0], "y1": v1[1],
             "x2": v2[0], "y2": v2[1],
             "color": "bronze",
             "thickness": thickness,
             "opacity": opacity,
-        }
+        })
 
-    return [
-        make_line(top_vertex, right_vertex),
-        make_line(right_vertex, bottom_vertex),
-        make_line(bottom_vertex, left_vertex),
-        make_line(left_vertex, top_vertex),
-    ]
+    return lines
 
 
 def _build_center_line(
-    center_x: float,
-    tip_y: float,
-    top_y: float,
+    schema_nib,
     palette: dict,
 ) -> dict[str, Any]:
-    """Vertical center line through the nib, using blue_glow color."""
+    """Center line follows the schema slit geometry (blue glow)."""
     thickness = palette["sizing"]["nib_line_thickness"]["center"]
     opacity = palette["opacity_defaults"]["nib_line"]["center"]
 
     return {
-        "x1": center_x,
-        "y1": tip_y,
-        "x2": center_x,
-        "y2": top_y,
+        "x1": schema_nib.slit_start[0],
+        "y1": schema_nib.slit_start[1],
+        "x2": schema_nib.slit_end[0],
+        "y2": schema_nib.slit_end[1],
         "color": "blue_glow",
         "thickness": thickness,
         "opacity": opacity,
@@ -218,27 +188,29 @@ def _build_center_line(
 
 
 def _build_accent_nodes(
-    center_x: float,
-    top_y: float,
-    half_width: float,
+    schema_nib,
     palette: dict,
 ) -> list[dict[str, Any]]:
     """Accent nodes placed symmetrically on the nib body.
 
-    Two pairs:
-      - Inner pair: at ~50% half_width, copper colored
-      - Outer pair: at full half_width (diamond waist), amber colored
+    Positioned relative to schema outline shoulders:
+      - Inner pair: at ~50% half_width, just above shoulder y (copper)
+      - Outer pair: at full half_width, slightly above inner (amber)
     """
+    center_x = schema_nib.outline[0][0]
+    shoulder_y = schema_nib.outline[1][1]
+    half_width = schema_nib.outline[1][0] - center_x
+
     nodes: list[dict[str, Any]] = []
 
     # Inner pair (copper)
     inner_dx = half_width * 0.5
-    inner_y = top_y + 0.08
+    inner_y = shoulder_y + 0.08
     nodes.append({"x": center_x - inner_dx, "y": inner_y, "color": "copper", "radius": 0.06})
     nodes.append({"x": center_x + inner_dx, "y": inner_y, "color": "copper", "radius": 0.06})
 
     # Outer pair (amber)
-    outer_y = top_y + 0.15
+    outer_y = shoulder_y + 0.15
     nodes.append({"x": center_x - half_width, "y": outer_y, "color": "amber", "radius": 0.05})
     nodes.append({"x": center_x + half_width, "y": outer_y, "color": "amber", "radius": 0.05})
 
@@ -246,16 +218,15 @@ def _build_accent_nodes(
 
 
 def _build_junction_ball(
-    center_x: float,
-    top_y: float,
+    schema_nib,
     palette: dict,
 ) -> dict[str, Any]:
-    """Warm-white glowing ball at the top of the nib where it meets the stem."""
+    """Warm-white glowing ball at schema ball_pos (where nib meets the stem)."""
     ball_opacities = palette["opacity_defaults"]["nib_ball"]
 
     return {
-        "x": center_x,
-        "y": top_y - 0.05,
+        "x": schema_nib.ball_pos[0],
+        "y": schema_nib.ball_pos[1],
         "radius": 0.10,
         "color": "warm_white",
         "opacity": ball_opacities["core"],
@@ -274,26 +245,40 @@ def _build_junction_ball(
 
 def build_nib(
     palette: dict,
-    tip_y: float = DEFAULT_TIP_Y,
-    top_y: float = DEFAULT_TOP_Y,
-    half_width: float = DEFAULT_HALF_WIDTH,
+    schema: PLogoSchema | None = None,
     fan_count: int = DEFAULT_FAN_COUNT,
-    center_x: float = DEFAULT_CENTER_X,
 ) -> dict[str, Any]:
-    """Build the complete nib geometry from parameters and palette."""
+    """Build the complete nib geometry from schema structure + palette aesthetics.
+
+    Structural coordinates are derived from schema.nib (the single source
+    of truth). The only free aesthetic parameter is fan_count.
+    """
+    if schema is None:
+        schema = _SCHEMA
+
+    snib = schema.nib
+    center_x = snib.outline[0][0]
+    tip_y = snib.outline[0][1]
+    top_y = snib.outline[1][1]
+    half_width = snib.outline[1][0] - center_x
+
     params = {
+        "center_x": center_x,
         "tip_y": tip_y,
         "top_y": top_y,
         "half_width": half_width,
         "fan_count": fan_count,
-        "center_x": center_x,
+        "ball_x": snib.ball_pos[0],
+        "ball_y": snib.ball_pos[1],
+        "ball_radius": snib.ball_radius,
+        "source": "PLogoSchema",
     }
 
-    fan_lines = _build_fan_lines(center_x, tip_y, top_y, half_width, fan_count, palette)
-    outline_lines = _build_diamond_outline(center_x, tip_y, top_y, half_width, palette)
-    center_line = _build_center_line(center_x, tip_y, top_y, palette)
-    accent_nodes = _build_accent_nodes(center_x, top_y, half_width, palette)
-    junction_ball = _build_junction_ball(center_x, top_y, palette)
+    fan_lines = _build_fan_lines(snib, fan_count, palette)
+    outline_lines = _build_outline(snib, palette)
+    center_line = _build_center_line(snib, palette)
+    accent_nodes = _build_accent_nodes(snib, palette)
+    junction_ball = _build_junction_ball(snib, palette)
 
     ink_origin = {"x": center_x, "y": tip_y}
 
@@ -301,9 +286,10 @@ def build_nib(
         "_meta": {
             "step": 2,
             "name": "nib",
-            "description": "Pen nib geometry — fan lines, diamond outline, "
-                           "center line, accent nodes, junction ball, ink origin.",
-            "version": "1.0",
+            "description": "Pen nib geometry — fan lines, outline, "
+                           "center line, accent nodes, junction ball, ink origin. "
+                           "Structural coordinates derived from PLogoSchema.nib.",
+            "version": "2.0",
         },
         "params": params,
         "fan_lines": fan_lines,
@@ -321,14 +307,11 @@ def build_nib(
 
 def write_nib(
     palette: dict,
-    tip_y: float = DEFAULT_TIP_Y,
-    top_y: float = DEFAULT_TOP_Y,
-    half_width: float = DEFAULT_HALF_WIDTH,
+    schema: PLogoSchema | None = None,
     fan_count: int = DEFAULT_FAN_COUNT,
-    center_x: float = DEFAULT_CENTER_X,
 ) -> Path:
     """Build nib geometry and write to build/nib.json. Returns the output path."""
-    nib_data = build_nib(palette, tip_y, top_y, half_width, fan_count, center_x)
+    nib_data = build_nib(palette, schema=schema, fan_count=fan_count)
 
     out_dir = Path(__file__).parent / "build"
     out_dir.mkdir(exist_ok=True)
@@ -367,12 +350,13 @@ def main() -> int:
         nib = json.load(f)
 
     print(f"nib.json written to {out_path}")
+    print(f"  Source:        PLogoSchema.nib (schema-derived)")
     print(f"  Fan lines:     {len(nib['fan_lines'])} ({nib['params']['fan_count']} per side)")
     print(f"  Outline lines: {len(nib['outline_lines'])}")
     print(f"  Center line:   1 (color: {nib['center_line']['color']})")
     print(f"  Accent nodes:  {len(nib['accent_nodes'])}")
     print(f"  Junction ball: 1 (color: {nib['junction_ball']['color']})")
-    print(f"  Ink origin:    ({nib['ink_origin']['x']}, {nib['ink_origin']['y']})")
+    print(f"  Ink origin:    ({nib['ink_origin']['x']:.4f}, {nib['ink_origin']['y']:.4f})")
     print("  Validation: PASSED")
 
     return 0

@@ -211,4 +211,4 @@ class TestOverlayDeterminism:
 
     def test_output_hash_matches_snapshot(self, overlay_html):
         h = hashlib.sha256(overlay_html.encode()).hexdigest()
-        assert h[:16] == "d0ee18fe35e53493"
+        assert h[:16] == "46bb95a4be3037f5"

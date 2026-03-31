@@ -66,30 +66,37 @@ class CairoCraftedRenderer(PLogoRenderer):
 
     def _draw(self, ctx, sz, ppu, transparent, debug):
         pal = PALETTE
-        s = self.schema
+        cx, cy = self._to_px(0, 0, ppu, False)
+        rb = 4.55 * ppu
 
-        # Background
+        self._draw_background(ctx, pal, cx, cy, rb, transparent)
+        self._draw_ring(ctx, pal, cx, cy, ppu)
+        self._draw_edges(ctx, pal, ppu, debug)
+        self._draw_arcs(ctx, pal, ppu, debug)
+        self._draw_nib(ctx, pal, ppu, debug)
+        self._draw_nodes(ctx, pal, ppu, debug)
+        self._draw_particles(ctx, pal, cx, cy, rb, ppu, debug)
+        self._draw_vignette(ctx, pal, cx, cy, rb, debug)
+
+    def _draw_background(self, ctx, pal, cx, cy, rb, transparent):
         if transparent:
             ctx.set_source_rgba(0, 0, 0, 0)
         else:
             ctx.set_source_rgb(*pal["bg_deep"])
         ctx.paint()
-
-        cx, cy = self._to_px(0, 0, ppu, False)
-        rb = 4.55 * ppu
-
         ctx.arc(cx, cy, rb, 0, 2 * math.pi)
         ctx.set_source_rgb(*pal["bg_circle"])
         ctx.fill()
 
-        # Ring
+    def _draw_ring(self, ctx, pal, cx, cy, ppu):
         rm = (4.55 + 4.72) / 2 * ppu
         ctx.set_line_width((4.72 - 4.55) * ppu)
         ctx.set_source_rgba(*pal["rosegold"], 0.92)
         ctx.arc(cx, cy, rm, 0, 2 * math.pi)
         ctx.stroke()
 
-        # Edges
+    def _draw_edges(self, ctx, pal, ppu, debug):
+        s = self.schema
         ctx.set_line_cap(cairo.LINE_CAP_ROUND)
         for e in s.edges:
             n1, n2 = s.node(e.from_id), s.node(e.to_id)
@@ -110,7 +117,8 @@ class CairoCraftedRenderer(PLogoRenderer):
             ctx.line_to(x2, y2)
             ctx.stroke()
 
-        # Arcs
+    def _draw_arcs(self, ctx, pal, ppu, debug):
+        s = self.schema
         ctx.set_line_cap(cairo.LINE_CAP_BUTT)
         for i, arc in enumerate(s.arcs):
             ax, ay = self._to_px(arc.cx, arc.cy, ppu)
@@ -129,8 +137,8 @@ class CairoCraftedRenderer(PLogoRenderer):
             ctx.stroke()
         ctx.set_line_cap(cairo.LINE_CAP_ROUND)
 
-        # Nib
-        nib = s.nib
+    def _draw_nib(self, ctx, pal, ppu, debug):
+        nib = self.schema.nib
         pts = [self._to_px(p[0], p[1], ppu) for p in nib.outline]
         if not debug:
             ctx.set_source_rgba(*pal["copper"], 0.15)
@@ -146,7 +154,7 @@ class CairoCraftedRenderer(PLogoRenderer):
             ctx.line_to(*p)
         ctx.stroke()
 
-        # Nib slit + ball
+        # Slit + ball
         ctx.set_source_rgba(*pal["blueglow"], 0.4)
         ctx.set_line_width(1.2)
         ctx.move_to(*self._to_px(*nib.slit_start, ppu))
@@ -157,12 +165,8 @@ class CairoCraftedRenderer(PLogoRenderer):
         ctx.arc(nbx, nby, 4 * P_SCALE, 0, 2 * math.pi)
         ctx.fill()
 
-        # Nodes
-        deg = defaultdict(int)
-        for e in s.edges:
-            deg[e.from_id] += 1
-            deg[e.to_id] += 1
-
+    def _draw_nodes(self, ctx, pal, ppu, debug):
+        s = self.schema
         for n in s.nodes:
             px, py = self._to_px(n.x, n.y, ppu)
             col = pal[NODE_COLORS.get(n.id, "copper")]
@@ -188,22 +192,23 @@ class CairoCraftedRenderer(PLogoRenderer):
             ctx.arc(px, py, cr * 0.35, 0, 2 * math.pi)
             ctx.fill()
 
-        # Particles (skip in debug)
-        if not debug:
-            random.seed(42)
-            for _ in range(55):
-                ang = random.random() * 2 * math.pi
-                rad = 0.6 + random.random() * 3.8
-                ppx, ppy = self._to_px(math.cos(ang) * rad, math.sin(ang) * rad, ppu, False)
-                dx, dy = ppx - cx, ppy - cy
-                if math.sqrt(dx * dx + dy * dy) > rb - 8:
-                    continue
-                c = random.choice([pal["copper"], pal["amber"], pal["bronze"], pal["warmwht"], pal["blueglow"]])
-                ctx.set_source_rgba(*c, 0.12 + random.random() * 0.22)
-                ctx.arc(ppx, ppy, 1.0 + random.random() * 2.0, 0, 2 * math.pi)
-                ctx.fill()
+    def _draw_particles(self, ctx, pal, cx, cy, rb, ppu, debug):
+        if debug:
+            return
+        random.seed(42)
+        for _ in range(55):
+            ang = random.random() * 2 * math.pi
+            rad = 0.6 + random.random() * 3.8
+            ppx, ppy = self._to_px(math.cos(ang) * rad, math.sin(ang) * rad, ppu, False)
+            dx, dy = ppx - cx, ppy - cy
+            if math.sqrt(dx * dx + dy * dy) > rb - 8:
+                continue
+            c = random.choice([pal["copper"], pal["amber"], pal["bronze"], pal["warmwht"], pal["blueglow"]])
+            ctx.set_source_rgba(*c, 0.12 + random.random() * 0.22)
+            ctx.arc(ppx, ppy, 1.0 + random.random() * 2.0, 0, 2 * math.pi)
+            ctx.fill()
 
-        # Vignette
+    def _draw_vignette(self, ctx, pal, cx, cy, rb, debug):
         vig = cairo.RadialGradient(cx, cy, rb * 0.45, cx, cy, rb)
         vig.add_color_stop_rgba(0, *pal["bg_circle"], 0)
         vig.add_color_stop_rgba(1, *pal["bg_circle"], 0.15 if debug else 0.35)

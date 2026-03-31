@@ -23,11 +23,8 @@ lines radiating from the tip upward, with teal accent nodes on the sides,
 amber nodes at the fan tips, and a warm-white glowing ball at the top
 junction.
 
-Nib geometry is parametric from four values:
-  - tip_y:      Y coordinate of the nib's lowest point (the writing tip)
-  - top_y:      Y coordinate where the nib meets the stem
-  - half_width: half the lateral span at the widest point
-  - fan_count:  number of fan lines per side (excluding center line)
+Nib geometry is derived from PLogoSchema.nib (single source of truth for
+structural coordinates). The only free aesthetic parameter is fan_count.
 """
 
 from __future__ import annotations
@@ -63,22 +60,27 @@ def nib_module():
     return nib
 
 
+@pytest.fixture(scope="session")
+def schema():
+    """Default PLogoSchema."""
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from p_logo import build_schema
+    return build_schema()
+
+
 @pytest.fixture
 def default_nib(nib_module, palette):
-    """Build nib geometry with default parameters."""
+    """Build nib geometry with default schema."""
     return nib_module.build_nib(palette)
 
 
 @pytest.fixture
 def custom_nib(nib_module, palette):
-    """Build nib geometry with custom parameters."""
-    return nib_module.build_nib(
-        palette,
-        tip_y=-5.0,
-        top_y=-3.5,
-        half_width=0.8,
-        fan_count=4,
-    )
+    """Build nib geometry with a different schema (different r_green)."""
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from p_logo import build_schema
+    custom_schema = build_schema(r_green=1.5)
+    return nib_module.build_nib(palette, schema=custom_schema, fan_count=4)
 
 
 @pytest.fixture
@@ -104,11 +106,20 @@ class TestModuleInterface:
         assert callable(getattr(nib_module, "validate", None))
 
     def test_has_default_params(self, nib_module):
-        """Module must expose its default parameter values."""
+        """Module must expose schema-derived default parameter values."""
         assert hasattr(nib_module, "DEFAULT_TIP_Y")
         assert hasattr(nib_module, "DEFAULT_TOP_Y")
         assert hasattr(nib_module, "DEFAULT_HALF_WIDTH")
         assert hasattr(nib_module, "DEFAULT_FAN_COUNT")
+
+    def test_defaults_match_schema(self, nib_module, schema):
+        """Module defaults must be derived from the canonical schema."""
+        nib = schema.nib
+        assert abs(nib_module.DEFAULT_CENTER_X - nib.outline[0][0]) < 1e-6
+        assert abs(nib_module.DEFAULT_TIP_Y - nib.outline[0][1]) < 1e-6
+        assert abs(nib_module.DEFAULT_TOP_Y - nib.outline[1][1]) < 1e-6
+        expected_hw = nib.outline[1][0] - nib.outline[0][0]
+        assert abs(nib_module.DEFAULT_HALF_WIDTH - expected_hw) < 1e-6
 
 
 # ──────────────────────────────────────────────
@@ -130,6 +141,10 @@ class TestOutputSchema:
         assert "top_y" in params
         assert "half_width" in params
         assert "fan_count" in params
+
+    def test_params_source_is_schema(self, default_nib):
+        """Params must indicate they were derived from PLogoSchema."""
+        assert default_nib["params"]["source"] == "PLogoSchema"
 
     def test_has_fan_lines(self, default_nib):
         assert "fan_lines" in default_nib
@@ -250,8 +265,6 @@ class TestFanLines:
     def test_fan_lines_spread_evenly(self, default_nib):
         """Fan line endpoints should be evenly distributed across the half-width."""
         cx = default_nib["params"]["center_x"]
-        hw = default_nib["params"]["half_width"]
-        fan_count = default_nib["params"]["fan_count"]
         lines = default_nib["fan_lines"]
 
         # Collect right-side endpoints (positive dx), sorted
@@ -271,14 +284,15 @@ class TestFanLines:
 
 
 # ──────────────────────────────────────────────
-# 5. DIAMOND OUTLINE
+# 5. OUTLINE (schema-derived kite shape)
 # ──────────────────────────────────────────────
 
-class TestDiamondOutline:
-    """The nib has a diamond (rhombus) outline connecting 4 cardinal points."""
+class TestOutline:
+    """The nib outline follows the schema's 4-segment closed polygon:
+    tip → right_shoulder → waist_middle → left_shoulder → tip."""
 
     def test_outline_has_four_lines(self, default_nib):
-        """A diamond has 4 edges."""
+        """Schema outline has 4 segments."""
         assert len(default_nib["outline_lines"]) == 4
 
     def test_outline_forms_closed_path(self, default_nib):
@@ -295,11 +309,11 @@ class TestDiamondOutline:
         counts = Counter(points)
         for pt, count in counts.items():
             assert count == 2, (
-                f"Diamond vertex {pt} appears {count} times (expected 2 for closed path)"
+                f"Outline vertex {pt} appears {count} times (expected 2 for closed path)"
             )
 
     def test_outline_is_symmetric(self, default_nib):
-        """Diamond must be left-right symmetric about center_x."""
+        """Outline must be left-right symmetric about center_x."""
         cx = default_nib["params"]["center_x"]
         lines = default_nib["outline_lines"]
         all_x = [line["x1"] for line in lines] + [line["x2"] for line in lines]
@@ -307,40 +321,49 @@ class TestDiamondOutline:
         offsets = [round(x - cx, 6) for x in all_x]
         for dx in offsets:
             assert -dx in offsets or abs(dx) < 1e-6, (
-                f"Diamond outline not symmetric: dx={dx} has no mirror"
+                f"Outline not symmetric: dx={dx} has no mirror"
             )
 
-    def test_outline_top_vertex_at_top_y(self, default_nib):
-        """The topmost vertex of the diamond should be at or near top_y."""
-        top_y = default_nib["params"]["top_y"]
+    def test_outline_matches_schema_vertices(self, default_nib, schema):
+        """Outline vertices must match PLogoSchema.nib.outline."""
         lines = default_nib["outline_lines"]
-        all_y = [line["y1"] for line in lines] + [line["y2"] for line in lines]
-        max_y = max(all_y)
-        assert abs(max_y - top_y) < 0.3, (
-            f"Diamond top vertex y={max_y} too far from top_y={top_y}"
-        )
+        schema_outline = schema.nib.outline
 
-    def test_outline_bottom_vertex_between_tip_and_top(self, default_nib):
-        """The bottommost diamond vertex should be between tip_y and top_y."""
+        # First segment starts at schema tip
+        assert abs(lines[0]["x1"] - schema_outline[0][0]) < 1e-6
+        assert abs(lines[0]["y1"] - schema_outline[0][1]) < 1e-6
+
+        # Second segment starts at schema right shoulder
+        assert abs(lines[1]["x1"] - schema_outline[1][0]) < 1e-6
+        assert abs(lines[1]["y1"] - schema_outline[1][1]) < 1e-6
+
+        # Third segment starts at schema waist middle
+        assert abs(lines[2]["x1"] - schema_outline[2][0]) < 1e-6
+        assert abs(lines[2]["y1"] - schema_outline[2][1]) < 1e-6
+
+        # Fourth segment starts at schema left shoulder
+        assert abs(lines[3]["x1"] - schema_outline[3][0]) < 1e-6
+        assert abs(lines[3]["y1"] - schema_outline[3][1]) < 1e-6
+
+    def test_outline_tip_is_bottommost(self, default_nib):
+        """The nib tip (schema outline[0]) is the lowest point."""
         tip_y = default_nib["params"]["tip_y"]
-        top_y = default_nib["params"]["top_y"]
         lines = default_nib["outline_lines"]
         all_y = [line["y1"] for line in lines] + [line["y2"] for line in lines]
         min_y = min(all_y)
-        mid_y = (tip_y + top_y) / 2
-        assert tip_y < min_y < top_y, (
-            f"Diamond bottom vertex y={min_y} not between tip_y={tip_y} and top_y={top_y}"
+        assert abs(min_y - tip_y) < 1e-6, (
+            f"Bottommost outline point {min_y} doesn't match tip_y {tip_y}"
         )
 
     def test_outline_width_matches_half_width(self, default_nib):
-        """The widest points of the diamond should be at ±half_width from center."""
+        """The widest points of the outline should be at ±half_width from center."""
         cx = default_nib["params"]["center_x"]
         hw = default_nib["params"]["half_width"]
         lines = default_nib["outline_lines"]
         all_x = [line["x1"] for line in lines] + [line["x2"] for line in lines]
         max_dx = max(abs(x - cx) for x in all_x)
         assert abs(max_dx - hw) < 1e-6, (
-            f"Diamond max half-width={max_dx} doesn't match half_width={hw}"
+            f"Outline max half-width={max_dx} doesn't match half_width={hw}"
         )
 
 
@@ -349,7 +372,7 @@ class TestDiamondOutline:
 # ──────────────────────────────────────────────
 
 class TestCenterLine:
-    """A single line running vertically through the nib center (blue glow)."""
+    """A single line following schema slit geometry (blue glow)."""
 
     def test_center_line_is_vertical(self, default_nib):
         cl = default_nib["center_line"]
@@ -360,15 +383,25 @@ class TestCenterLine:
         cl = default_nib["center_line"]
         assert abs(cl["x1"] - cx) < 1e-6
 
-    def test_center_line_spans_tip_to_top(self, default_nib):
-        """Center line must span from tip to at or above top_y."""
+    def test_center_line_matches_schema_slit(self, default_nib, schema):
+        """Center line must match schema.nib.slit_start/end."""
+        cl = default_nib["center_line"]
+        slit_start = schema.nib.slit_start
+        slit_end = schema.nib.slit_end
+        assert abs(cl["x1"] - slit_start[0]) < 1e-6
+        assert abs(cl["y1"] - slit_start[1]) < 1e-6
+        assert abs(cl["x2"] - slit_end[0]) < 1e-6
+        assert abs(cl["y2"] - slit_end[1]) < 1e-6
+
+    def test_center_line_within_nib_height(self, default_nib):
+        """Center line must be within the nib's vertical extent."""
         tip_y = default_nib["params"]["tip_y"]
         top_y = default_nib["params"]["top_y"]
         cl = default_nib["center_line"]
         min_y = min(cl["y1"], cl["y2"])
         max_y = max(cl["y1"], cl["y2"])
-        assert min_y <= tip_y + 1e-6, f"Center line bottom {min_y} doesn't reach tip {tip_y}"
-        assert max_y >= top_y - 0.2, f"Center line top {max_y} doesn't reach top {top_y}"
+        assert min_y >= tip_y - 0.1, f"Center line bottom {min_y} below tip {tip_y}"
+        assert max_y <= top_y + 0.1, f"Center line top {max_y} above shoulder {top_y}"
 
     def test_center_line_uses_blue_glow(self, default_nib):
         """Design rationale: nib center line uses the blue_glow color."""
@@ -454,13 +487,11 @@ class TestJunctionBall:
         jb = default_nib["junction_ball"]
         assert abs(jb["x"] - cx) < 1e-6
 
-    def test_junction_ball_near_top(self, default_nib):
-        """The ball sits at or just above the top_y of the nib."""
-        top_y = default_nib["params"]["top_y"]
+    def test_junction_ball_matches_schema(self, default_nib, schema):
+        """Junction ball must be positioned at schema.nib.ball_pos."""
         jb = default_nib["junction_ball"]
-        assert abs(jb["y"] - top_y) < 0.3, (
-            f"Junction ball y={jb['y']} too far from top_y={top_y}"
-        )
+        assert abs(jb["x"] - schema.nib.ball_pos[0]) < 1e-6
+        assert abs(jb["y"] - schema.nib.ball_pos[1]) < 1e-6
 
     def test_junction_ball_uses_warm_white(self, default_nib):
         """Design rationale: glowing ball is warm white."""
@@ -489,46 +520,55 @@ class TestInkOrigin:
 
 
 # ──────────────────────────────────────────────
-# 10. PARAMETRIC BEHAVIOR
+# 10. SCHEMA ALIGNMENT
 # ──────────────────────────────────────────────
 
-class TestParametric:
-    """Changing input parameters must produce correspondingly changed geometry."""
+class TestSchemaAlignment:
+    """All structural coordinates must be derived from PLogoSchema.nib."""
 
-    def test_wider_half_width_produces_wider_fan(self, nib_module, palette):
-        narrow = nib_module.build_nib(palette, half_width=0.4)
-        wide = nib_module.build_nib(palette, half_width=1.0)
+    def test_different_schema_produces_different_geometry(self, nib_module, palette):
+        """Changing r_green must produce correspondingly changed nib."""
+        from p_logo import build_schema
+        small = nib_module.build_nib(palette, schema=build_schema(r_green=1.0))
+        large = nib_module.build_nib(palette, schema=build_schema(r_green=1.5))
 
-        narrow_max_dx = max(
-            abs(l["x2"] - narrow["params"]["center_x"])
-            for l in narrow["fan_lines"]
-        )
-        wide_max_dx = max(
-            abs(l["x2"] - wide["params"]["center_x"])
-            for l in wide["fan_lines"]
-        )
-        assert wide_max_dx > narrow_max_dx
+        # Different r_green → different half_width
+        assert small["params"]["half_width"] != large["params"]["half_width"]
 
-    def test_deeper_tip_produces_longer_center_line(self, nib_module, palette):
-        shallow = nib_module.build_nib(palette, tip_y=-3.5, top_y=-3.0)
-        deep = nib_module.build_nib(palette, tip_y=-5.0, top_y=-3.0)
-
-        def cl_length(nib_data):
-            cl = nib_data["center_line"]
-            return abs(cl["y2"] - cl["y1"])
-
-        assert cl_length(deep) > cl_length(shallow)
+        # Different tip position
+        assert small["params"]["tip_y"] != large["params"]["tip_y"]
 
     def test_more_fan_lines(self, nib_module, palette):
         few = nib_module.build_nib(palette, fan_count=2)
         many = nib_module.build_nib(palette, fan_count=5)
         assert len(many["fan_lines"]) > len(few["fan_lines"])
 
-    def test_params_recorded_in_output(self, custom_nib):
-        assert custom_nib["params"]["tip_y"] == -5.0
-        assert custom_nib["params"]["top_y"] == -3.5
-        assert custom_nib["params"]["half_width"] == 0.8
+    def test_fan_count_recorded_in_output(self, custom_nib):
         assert custom_nib["params"]["fan_count"] == 4
+
+    def test_ink_origin_matches_schema_tip(self, default_nib, schema):
+        """Ink origin must be at the schema nib tip (outline[0])."""
+        origin = default_nib["ink_origin"]
+        tip = schema.nib.outline[0]
+        assert abs(origin["x"] - tip[0]) < 1e-6
+        assert abs(origin["y"] - tip[1]) < 1e-6
+
+    def test_wider_schema_produces_wider_fan(self, nib_module, palette):
+        """Larger r_green → wider nib → wider fan spread."""
+        from p_logo import build_schema
+        narrow = nib_module.build_nib(palette, schema=build_schema(r_green=1.0))
+        wide = nib_module.build_nib(palette, schema=build_schema(r_green=1.5))
+
+        narrow_cx = narrow["params"]["center_x"]
+        wide_cx = wide["params"]["center_x"]
+
+        narrow_max_dx = max(
+            abs(l["x2"] - narrow_cx) for l in narrow["fan_lines"]
+        )
+        wide_max_dx = max(
+            abs(l["x2"] - wide_cx) for l in wide["fan_lines"]
+        )
+        assert wide_max_dx > narrow_max_dx
 
 
 # ──────────────────────────────────────────────
@@ -650,20 +690,6 @@ class TestValidation:
         errors = nib_module.validate(palette)
         assert errors == [], f"Unexpected validation errors: {errors}"
 
-    def test_validate_catches_inverted_y(self, nib_module, palette):
-        """tip_y must be below top_y (smaller Y value)."""
-        errors = nib_module.validate(palette, tip_y=-2.0, top_y=-3.0)
-        assert len(errors) > 0
-        assert any("tip_y" in e or "top_y" in e or "inverted" in e.lower() for e in errors)
-
-    def test_validate_catches_zero_width(self, nib_module, palette):
-        errors = nib_module.validate(palette, half_width=0.0)
-        assert len(errors) > 0
-
-    def test_validate_catches_negative_width(self, nib_module, palette):
-        errors = nib_module.validate(palette, half_width=-0.5)
-        assert len(errors) > 0
-
     def test_validate_catches_zero_fan_count(self, nib_module, palette):
         errors = nib_module.validate(palette, fan_count=0)
         assert len(errors) > 0
@@ -693,7 +719,8 @@ class TestJsonOutput:
         with open(nib_json_path) as f:
             from_file = json.load(f)
         # Compare a stable subset (params and counts)
-        assert from_file["params"] == default_nib["params"]
+        assert from_file["params"]["fan_count"] == default_nib["params"]["fan_count"]
+        assert from_file["params"]["source"] == "PLogoSchema"
         assert len(from_file["fan_lines"]) == len(default_nib["fan_lines"])
         assert len(from_file["outline_lines"]) == len(default_nib["outline_lines"])
 

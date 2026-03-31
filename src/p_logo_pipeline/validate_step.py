@@ -155,123 +155,112 @@ def _compute_graph_metrics(graph: dict) -> dict[str, Any]:
 # Checks
 # ──────────────────────────────────────────────
 
+def _check_step_meta(data: dict, name: str, expected_step: int) -> dict[str, str]:
+    if data.get("_meta", {}).get("step") == expected_step:
+        return {"name": name, "status": "pass", "detail": f"{name.split('_')[0].title()} is step {expected_step}"}
+    return {"name": name, "status": "fail", "detail": f"{name} _meta.step != {expected_step}"}
+
+
+def _check_animation_systems(animations: dict) -> dict[str, str]:
+    systems = animations.get("systems", {})
+    if len(systems) == 6:
+        return {"name": "animation_systems_count", "status": "pass", "detail": "6 animation systems present"}
+    return {"name": "animation_systems_count", "status": "fail", "detail": f"{len(systems)} systems (expected 6)"}
+
+
+def _check_graph_connectivity(graph_metrics: dict) -> dict[str, str]:
+    if graph_metrics["connected"]:
+        return {"name": "graph_connected", "status": "pass", "detail": "Graph is connected (BFS reaches all nodes)"}
+    return {"name": "graph_connected", "status": "fail", "detail": "Graph is disconnected"}
+
+
+def _check_metric_equals(graph_metrics: dict, key: str, expected: int,
+                         name: str, pass_detail: str, fail_label: str) -> dict[str, str]:
+    actual = graph_metrics[key]
+    if actual == expected:
+        return {"name": name, "status": "pass", "detail": pass_detail}
+    return {"name": name, "status": "fail", "detail": f"{actual} {fail_label} (expected {expected})"}
+
+
+def _check_layout_element_count(layout: dict) -> dict[str, str]:
+    count = len(layout.get("elements", []))
+    if count >= 50:
+        return {"name": "layout_element_count", "status": "pass", "detail": f"{count} layout elements"}
+    return {"name": "layout_element_count", "status": "fail", "detail": f"Only {count} layout elements"}
+
+
+def _check_html_structure(html: str) -> dict[str, str]:
+    if html.strip().startswith("<!DOCTYPE html") and "</html>" in html:
+        return {"name": "html_valid_structure", "status": "pass", "detail": "HTML has DOCTYPE and closing tag"}
+    return {"name": "html_valid_structure", "status": "fail", "detail": "HTML structure invalid"}
+
+
+def _check_html_no_nan(html: str) -> dict[str, str]:
+    import re
+    real_nans = len(re.findall(r'\bNaN\b', html))
+    if real_nans == 0:
+        return {"name": "html_no_nan", "status": "pass", "detail": "No NaN values in HTML output"}
+    return {"name": "html_no_nan", "status": "fail", "detail": f"{real_nans} NaN occurrences in HTML"}
+
+
+def _check_threejs_included(html: str) -> dict[str, str]:
+    if "three.js/r128" in html or "three.min.js" in html:
+        return {"name": "threejs_included", "status": "pass", "detail": "Three.js r128 included"}
+    return {"name": "threejs_included", "status": "fail", "detail": "Three.js not found in HTML"}
+
+
+def _check_total_renderable(inventory: dict[str, int]) -> dict[str, str]:
+    total = sum(inventory.values())
+    if 250 <= total <= 550:
+        return {"name": "total_renderable_range", "status": "pass",
+                "detail": f"Total {total} renderable objects (target ~310, includes canvas items)"}
+    return {"name": "total_renderable_range", "status": "warn",
+            "detail": f"Total {total} outside expected [250, 550]"}
+
+
+def _check_palette_colors_in_html(palette: dict, html: str) -> dict[str, str]:
+    missing = []
+    for name, color in palette["colors"].items():
+        hex_val = color["hex"].lstrip("#")
+        if hex_val.lower() not in html.lower() and f"0x{hex_val}" not in html:
+            missing.append(name)
+    if not missing:
+        return {"name": "palette_colors_in_html", "status": "pass", "detail": "All 8 palette colors in HTML"}
+    return {"name": "palette_colors_in_html", "status": "fail", "detail": f"Missing colors: {missing}"}
+
+
+def _check_brand_text(html: str) -> dict[str, str]:
+    if "PAL" in html and "Notes" in html:
+        return {"name": "brand_text_present", "status": "pass", "detail": "Brand text 'PAL's Notes' in HTML"}
+    return {"name": "brand_text_present", "status": "fail", "detail": "Brand text missing"}
+
+
 def _run_checks(
     palette: dict, graph: dict, nib: dict, arcs: dict,
     layout: dict, animations: dict, html: str,
     inventory: dict[str, int], graph_metrics: dict
 ) -> list[dict[str, Any]]:
     """Run all validation checks. Each returns {name, status, detail}."""
-    checks: list[dict[str, Any]] = []
-
-    def add(name: str, status: str, detail: str) -> None:
-        checks.append({"name": name, "status": status, "detail": detail})
-
-    # 1. Palette step 0
-    if palette.get("_meta", {}).get("step") == 0:
-        add("palette_step_0", "pass", "Palette is step 0")
-    else:
-        add("palette_step_0", "fail", "Palette _meta.step != 0")
-
-    # 2. Graph step 1
-    if graph.get("_meta", {}).get("step") == 1:
-        add("graph_step_1", "pass", "Graph is step 1")
-    else:
-        add("graph_step_1", "fail", "Graph _meta.step != 1")
-
-    # 3. Layout step 4
-    if layout.get("_meta", {}).get("step") == 4:
-        add("layout_step_4", "pass", "Layout is step 4")
-    else:
-        add("layout_step_4", "fail", "Layout _meta.step != 4")
-
-    # 4. Animation step 5 / system count
-    systems = animations.get("systems", {})
-    if len(systems) == 6:
-        add("animation_systems_count", "pass", f"6 animation systems present")
-    else:
-        add("animation_systems_count", "fail", f"{len(systems)} systems (expected 6)")
-
-    # 5. Graph connectivity
-    if graph_metrics["connected"]:
-        add("graph_connected", "pass", "Graph is connected (BFS reaches all nodes)")
-    else:
-        add("graph_connected", "fail", "Graph is disconnected")
-
-    # 6. Node count = 25
-    if graph_metrics["node_count"] == 25:
-        add("node_count_25", "pass", "25 nodes")
-    else:
-        add("node_count_25", "fail", f"{graph_metrics['node_count']} nodes (expected 25)")
-
-    # 7. Edge count = 38
-    if graph_metrics["edge_count"] == 44:
-        add("edge_count_44", "pass", "44 edges")
-    else:
-        add("edge_count_44", "fail", f"{graph_metrics['edge_count']} edges (expected 44)")
-
-    # 8. Max degree = 6
-    if graph_metrics["max_degree"] == 6:
-        add("max_degree_6", "pass", "Max degree is 6 (junction node)")
-    else:
-        add("max_degree_6", "fail", f"Max degree {graph_metrics['max_degree']} (expected 6)")
-
-    # 9. Layout element count
-    layout_elements = len(layout.get("elements", []))
-    if layout_elements >= 50:
-        add("layout_element_count", "pass", f"{layout_elements} layout elements")
-    else:
-        add("layout_element_count", "fail", f"Only {layout_elements} layout elements")
-
-    # 10. HTML is valid
-    if html.strip().startswith("<!DOCTYPE html") and "</html>" in html:
-        add("html_valid_structure", "pass", "HTML has DOCTYPE and closing tag")
-    else:
-        add("html_valid_structure", "fail", "HTML structure invalid")
-
-    # 11. No NaN in HTML
-    nan_count = html.lower().count("nan")
-    # Filter out legitimate uses (e.g. "canvas", "channel")
-    # NaN as a JS value would appear as standalone "NaN" or in data
-    import re
-    real_nans = len(re.findall(r'\bNaN\b', html))
-    if real_nans == 0:
-        add("html_no_nan", "pass", "No NaN values in HTML output")
-    else:
-        add("html_no_nan", "fail", f"{real_nans} NaN occurrences in HTML")
-
-    # 12. Three.js included
-    if "three.js/r128" in html or "three.min.js" in html:
-        add("threejs_included", "pass", "Three.js r128 included")
-    else:
-        add("threejs_included", "fail", "Three.js not found in HTML")
-
-    # 13. Total renderable in expected range
-    total = sum(inventory.values())
-    if 250 <= total <= 550:
-        add("total_renderable_range", "pass",
-            f"Total {total} renderable objects (target ~310, includes canvas items)")
-    else:
-        add("total_renderable_range", "warn",
-            f"Total {total} outside expected [250, 550]")
-
-    # 14. All colors present in HTML
-    missing_colors = []
-    for name, color in palette["colors"].items():
-        hex_val = color["hex"].lstrip("#")
-        if hex_val.lower() not in html.lower() and f"0x{hex_val}" not in html:
-            missing_colors.append(name)
-    if not missing_colors:
-        add("palette_colors_in_html", "pass", "All 8 palette colors in HTML")
-    else:
-        add("palette_colors_in_html", "fail", f"Missing colors: {missing_colors}")
-
-    # 15. Brand text present
-    if "PAL" in html and "Notes" in html:
-        add("brand_text_present", "pass", "Brand text 'PAL's Notes' in HTML")
-    else:
-        add("brand_text_present", "fail", "Brand text missing")
-
-    return checks
+    return [
+        _check_step_meta(palette, "palette_step_0", 0),
+        _check_step_meta(graph, "graph_step_1", 1),
+        _check_step_meta(layout, "layout_step_4", 4),
+        _check_animation_systems(animations),
+        _check_graph_connectivity(graph_metrics),
+        _check_metric_equals(graph_metrics, "node_count", 25, "node_count_25",
+                             "25 nodes", "nodes"),
+        _check_metric_equals(graph_metrics, "edge_count", 44, "edge_count_44",
+                             "44 edges", "edges"),
+        _check_metric_equals(graph_metrics, "max_degree", 6, "max_degree_6",
+                             "Max degree is 6 (junction node)", "max degree"),
+        _check_layout_element_count(layout),
+        _check_html_structure(html),
+        _check_html_no_nan(html),
+        _check_threejs_included(html),
+        _check_total_renderable(inventory),
+        _check_palette_colors_in_html(palette, html),
+        _check_brand_text(html),
+    ]
 
 
 # ──────────────────────────────────────────────

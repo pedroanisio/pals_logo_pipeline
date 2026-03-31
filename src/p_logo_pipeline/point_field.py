@@ -38,59 +38,65 @@ class FieldParams:
     origin_y: float = 0.0
 
 
-def generate_field(params: FieldParams | None = None) -> dict[str, Any]:
-    if params is None:
-        params = FieldParams()
-
-    P = params
-    cx, cy = P.cx, P.cy
-    RG = P.R_GREEN
-
-    # ── √2 chain ──
-    R_D = RG / math.sqrt(2)       # Blue (inner)
-    R_A = RG * math.sqrt(2)       # Gold (outer)
-    R_VERTEX = R_A - RG           # = RG(√2 - 1)
+def _compute_derived(P: FieldParams):
+    """Compute all derived geometry from the free parameter."""
+    cx, cy, RG = P.cx, P.cy, P.R_GREEN
+    R_D = RG / math.sqrt(2)
+    R_A = RG * math.sqrt(2)
+    R_VERTEX = R_A - RG
 
     def tx(x, y):
         return (round(x * P.scale + P.origin_x, 6),
                 round(y * P.scale + P.origin_y, 6))
 
-    # ── Grid coordinates ──
-    # X-columns
-    x_sqB_left  = cx - R_A                         # Square.B left edge
-    x_sqA_v2    = cx - RG                           # Square.A V2/V3 x (= cx - R_GREEN = cx - R_A/√2)
-    x_rect_right = x_sqB_left + 2 * R_VERTEX       # Rect.1 right edge
-    x_center    = cx                                 # Center x
-    x_sqB_right = cx + R_A                          # Square.B right edge
+    x_sqB_left  = cx - R_A
+    x_sqA_v2    = cx - RG
+    x_rect_right = x_sqB_left + 2 * R_VERTEX
+    x_center    = cx
+    x_sqB_right = cx + R_A
 
-    # Y-rows
-    y_sqB_top       = cy + R_A                      # Square.B top / Gold tangent top
-    y_green_tan_top = cy + RG                       # Green tangent top
-    y_blue_tan_top  = cy + R_D                      # Blue tangent top
-    y_center        = cy                             # Center y
-    y_blue_tan_bot  = cy - R_D                      # Blue tangent bottom
-    y_green_tan_bot = cy - RG                       # Green tangent bottom
-    y_sqB_bot       = cy - R_A                      # Square.B bottom / Gold tangent bottom
+    y_sqB_top       = cy + R_A
+    y_green_tan_top = cy + RG
+    y_blue_tan_top  = cy + R_D
+    y_center        = cy
+    y_blue_tan_bot  = cy - R_D
+    y_green_tan_bot = cy - RG
+    y_sqB_bot       = cy - R_A
 
-    # ── Nib geometry ──
     rect_width = 2 * R_VERTEX
-    rect_height = y_sqB_top - (y_sqB_bot - rect_width * 2.5)  # extend below SqB
-    nib_center_x = x_sqA_v2                         # nib centered on SqA vertex x
-    rect_bottom = y_sqB_bot - rect_width * 2.5      # stem extends below
-    circ_rect_i_cy = rect_bottom + R_VERTEX         # inscribed circle center
-    circ_rect_i_top = circ_rect_i_cy + R_VERTEX     # inscribed circle top
-    circ_rect_v_cy = rect_bottom - R_VERTEX         # external vertex circle center
+    nib_center_x = x_sqA_v2
+    rect_bottom = y_sqB_bot - rect_width * 2.5
+    circ_rect_i_cy = rect_bottom + R_VERTEX
+    circ_rect_i_top = circ_rect_i_cy + R_VERTEX
+    circ_rect_v_cy = rect_bottom - R_VERTEX
 
-    # ══════════════════════════════════════
-    # SHAPES
-    # ══════════════════════════════════════
+    return {
+        "cx": cx, "cy": cy, "RG": RG, "R_D": R_D, "R_A": R_A,
+        "R_VERTEX": R_VERTEX, "tx": tx,
+        "x_sqB_left": x_sqB_left, "x_sqA_v2": x_sqA_v2,
+        "x_rect_right": x_rect_right, "x_center": x_center,
+        "x_sqB_right": x_sqB_right,
+        "y_sqB_top": y_sqB_top, "y_green_tan_top": y_green_tan_top,
+        "y_blue_tan_top": y_blue_tan_top, "y_center": y_center,
+        "y_blue_tan_bot": y_blue_tan_bot, "y_green_tan_bot": y_green_tan_bot,
+        "y_sqB_bot": y_sqB_bot,
+        "rect_width": rect_width, "nib_center_x": nib_center_x,
+        "rect_bottom": rect_bottom, "circ_rect_i_cy": circ_rect_i_cy,
+        "circ_rect_i_top": circ_rect_i_top, "circ_rect_v_cy": circ_rect_v_cy,
+        "P": P,
+    }
+
+
+def _build_field_shapes(d: dict) -> dict[str, dict]:
+    """Build all shape definitions from derived geometry."""
+    cx, cy, tx = d["cx"], d["cy"], d["tx"]
+    P = d["P"]
     shapes: dict[str, dict] = {}
 
-    # Three arc circles
     for name, r, role in [
-        ("Circ.A",       R_A, "Gold arc (outer). R = R_GREEN×√2."),
-        ("Circ.Bounds.A", RG, "Green arc (middle). R = R_GREEN (free parameter)."),
-        ("Circ.D",       R_D, "Blue arc (inner). R = R_GREEN/√2."),
+        ("Circ.A",       d["R_A"], "Gold arc (outer). R = R_GREEN×√2."),
+        ("Circ.Bounds.A", d["RG"], "Green arc (middle). R = R_GREEN (free parameter)."),
+        ("Circ.D",       d["R_D"], "Blue arc (inner). R = R_GREEN/√2."),
     ]:
         ct = tx(cx, cy)
         shapes[name] = {
@@ -99,22 +105,20 @@ def generate_field(params: FieldParams | None = None) -> dict[str, Any]:
             "radius": round(r * P.scale, 6), "role": role,
         }
 
-    # Square.B = circumscribes Circ.A
     shapes["Square.B"] = {
         "type": "square", "name": "Square.B",
         "vertices": {
-            "UL": {"x": tx(x_sqB_left, y_sqB_top)[0], "y": tx(x_sqB_left, y_sqB_top)[1]},
-            "UR": {"x": tx(x_sqB_right, y_sqB_top)[0], "y": tx(x_sqB_right, y_sqB_top)[1]},
-            "LL": {"x": tx(x_sqB_left, y_sqB_bot)[0], "y": tx(x_sqB_left, y_sqB_bot)[1]},
-            "LR": {"x": tx(x_sqB_right, y_sqB_bot)[0], "y": tx(x_sqB_right, y_sqB_bot)[1]},
+            "UL": {"x": tx(d["x_sqB_left"], d["y_sqB_top"])[0], "y": tx(d["x_sqB_left"], d["y_sqB_top"])[1]},
+            "UR": {"x": tx(d["x_sqB_right"], d["y_sqB_top"])[0], "y": tx(d["x_sqB_right"], d["y_sqB_top"])[1]},
+            "LL": {"x": tx(d["x_sqB_left"], d["y_sqB_bot"])[0], "y": tx(d["x_sqB_left"], d["y_sqB_bot"])[1]},
+            "LR": {"x": tx(d["x_sqB_right"], d["y_sqB_bot"])[0], "y": tx(d["x_sqB_right"], d["y_sqB_bot"])[1]},
         },
         "role": "Circumscribes Circ.A. Defines stem_x and outer y-rows.",
     }
 
-    # Square.A = inscribed in Circ.A at 45° (vertices on Circ.A)
     for name, r, desc in [
-        ("Square.A", R_A, "Inscribed in Circ.A at 45°"),
-        ("Square.D", RG,  "Inscribed in Circ.Bounds.A at 45° (Green IS)"),
+        ("Square.A", d["R_A"], "Inscribed in Circ.A at 45°"),
+        ("Square.D", d["RG"],  "Inscribed in Circ.Bounds.A at 45° (Green IS)"),
     ]:
         half = r / math.sqrt(2)
         shapes[name] = {
@@ -128,38 +132,46 @@ def generate_field(params: FieldParams | None = None) -> dict[str, Any]:
             "role": desc,
         }
 
-    # Rect.1 (stem rectangle)
     shapes["Rect.1"] = {
         "type": "rectangle", "name": "Rect.1",
         "vertices": {
-            "UL": {"x": tx(x_sqB_left, y_sqB_top)[0], "y": tx(x_sqB_left, y_sqB_top)[1]},
-            "UR": {"x": tx(x_rect_right, y_sqB_top)[0], "y": tx(x_rect_right, y_sqB_top)[1]},
-            "LL": {"x": tx(x_sqB_left, rect_bottom)[0], "y": tx(x_sqB_left, rect_bottom)[1]},
-            "LR": {"x": tx(x_rect_right, rect_bottom)[0], "y": tx(x_rect_right, rect_bottom)[1]},
+            "UL": {"x": tx(d["x_sqB_left"], d["y_sqB_top"])[0], "y": tx(d["x_sqB_left"], d["y_sqB_top"])[1]},
+            "UR": {"x": tx(d["x_rect_right"], d["y_sqB_top"])[0], "y": tx(d["x_rect_right"], d["y_sqB_top"])[1]},
+            "LL": {"x": tx(d["x_sqB_left"], d["rect_bottom"])[0], "y": tx(d["x_sqB_left"], d["rect_bottom"])[1]},
+            "LR": {"x": tx(d["x_rect_right"], d["rect_bottom"])[0], "y": tx(d["x_rect_right"], d["rect_bottom"])[1]},
         },
-        "width": round(rect_width * P.scale, 6),
+        "width": round(d["rect_width"] * P.scale, 6),
         "role": "Stem rectangle. Width = 2×R_VERTEX.",
     }
 
-    # Nib circles
     shapes["Circ.Rect.I"] = {
         "type": "circle", "name": "Circ.Rect.I",
-        "center": {"x": tx(nib_center_x, circ_rect_i_cy)[0],
-                   "y": tx(nib_center_x, circ_rect_i_cy)[1]},
-        "radius": round(R_VERTEX * P.scale, 6),
+        "center": {"x": tx(d["nib_center_x"], d["circ_rect_i_cy"])[0],
+                   "y": tx(d["nib_center_x"], d["circ_rect_i_cy"])[1]},
+        "radius": round(d["R_VERTEX"] * P.scale, 6),
         "role": "Inscribed circle in Rect.1 at bottom (nib circle).",
     }
     shapes["Circ.Rect.V"] = {
         "type": "circle", "name": "Circ.Rect.V",
-        "center": {"x": tx(nib_center_x, circ_rect_v_cy)[0],
-                   "y": tx(nib_center_x, circ_rect_v_cy)[1]},
-        "radius": round(R_VERTEX * P.scale, 6),
+        "center": {"x": tx(d["nib_center_x"], d["circ_rect_v_cy"])[0],
+                   "y": tx(d["nib_center_x"], d["circ_rect_v_cy"])[1]},
+        "radius": round(d["R_VERTEX"] * P.scale, 6),
         "role": "External vertex circle at Rect.1 bottom.",
     }
 
-    # ══════════════════════════════════════
-    # NAMED POINTS — GRID INTERSECTIONS
-    # ══════════════════════════════════════
+    return shapes
+
+
+def _build_field_points(d: dict) -> tuple[dict[str, dict], list[dict]]:
+    """Build all named points from derived geometry."""
+    cx, cy, tx = d["cx"], d["cy"], d["tx"]
+    R_D, RG, R_A = d["R_D"], d["RG"], d["R_A"]
+    R_VERTEX = d["R_VERTEX"]
+    nib_center_x = d["nib_center_x"]
+    circ_rect_i_top = d["circ_rect_i_top"]
+    circ_rect_i_cy = d["circ_rect_i_cy"]
+    circ_rect_v_cy = d["circ_rect_v_cy"]
+
     points: dict[str, dict] = {}
     intersections: list[dict] = []
 
@@ -167,26 +179,25 @@ def generate_field(params: FieldParams | None = None) -> dict[str, Any]:
         t = tx(x, y)
         points[name] = {"x": t[0], "y": t[1], "description": desc, "tags": tags or []}
 
-    # ── Nib waist Y (new row for bump pattern) ──
-    waist_y = circ_rect_i_top  # = Circ.Rect.I top = rect_bottom + 2*R_VERTEX
-    bump_hub_y = (y_sqB_bot + waist_y) / 2  # midpoint between SqB bottom and waist
+    waist_y = circ_rect_i_top
+    bump_hub_y = (d["y_sqB_bot"] + waist_y) / 2
 
-    # Define the grid
+    # Grid definition
     x_cols = {
-        "sqB_left":   (x_sqB_left,   "Square.B left"),
-        "sqA_v2_x":   (x_sqA_v2,     "Square.A V2/V3 x"),
-        "rect_right":  (x_rect_right, "Rect.1 right"),
-        "center_x":   (x_center,      "Center x"),
-        "sqB_right":  (x_sqB_right,   "Square.B right"),
+        "sqB_left":   (d["x_sqB_left"],   "Square.B left"),
+        "sqA_v2_x":   (d["x_sqA_v2"],     "Square.A V2/V3 x"),
+        "rect_right":  (d["x_rect_right"], "Rect.1 right"),
+        "center_x":   (d["x_center"],      "Center x"),
+        "sqB_right":  (d["x_sqB_right"],   "Square.B right"),
     }
     y_rows = {
-        "sqB_top":       (y_sqB_top,       "Square.B top / Gold TAN top"),
-        "green_tan_top": (y_green_tan_top, "Green tangent top"),
-        "blue_tan_top":  (y_blue_tan_top,  "Blue tangent top"),
-        "center_y":      (y_center,         "Center y"),
-        "blue_tan_bot":  (y_blue_tan_bot,  "Blue tangent bottom"),
-        "green_tan_bot": (y_green_tan_bot, "Green tangent bottom"),
-        "sqB_bot":       (y_sqB_bot,       "Square.B bottom / Gold TAN bottom"),
+        "sqB_top":       (d["y_sqB_top"],       "Square.B top / Gold TAN top"),
+        "green_tan_top": (d["y_green_tan_top"], "Green tangent top"),
+        "blue_tan_top":  (d["y_blue_tan_top"],  "Blue tangent top"),
+        "center_y":      (d["y_center"],         "Center y"),
+        "blue_tan_bot":  (d["y_blue_tan_bot"],  "Blue tangent bottom"),
+        "green_tan_bot": (d["y_green_tan_bot"], "Green tangent bottom"),
+        "sqB_bot":       (d["y_sqB_bot"],       "Square.B bottom / Gold TAN bottom"),
         "waist_y":       (waist_y,          "Circ.Rect.I top / nib waist"),
     }
 
@@ -222,6 +233,9 @@ def generate_field(params: FieldParams | None = None) -> dict[str, Any]:
                 ["vertex", f"is_{circ_name}", f"angle_{angle_deg}"])
 
     # ── Square.B corners ──
+    x_sqB_left, x_sqB_right = d["x_sqB_left"], d["x_sqB_right"]
+    y_sqB_top, y_sqB_bot = d["y_sqB_top"], d["y_sqB_bot"]
+    x_rect_right = d["x_rect_right"]
     add("P.SQB.UL", x_sqB_left, y_sqB_top, "Square.B upper-left", ["corner", "sq_B"])
     add("P.SQB.UR", x_sqB_right, y_sqB_top, "Square.B upper-right", ["corner", "sq_B"])
     add("P.SQB.LL", x_sqB_left, y_sqB_bot, "Square.B lower-left", ["corner", "sq_B"])
@@ -253,18 +267,26 @@ def generate_field(params: FieldParams | None = None) -> dict[str, Any]:
     add("P.GOLD.ARC.TOP", gold_top_x, gold_top_y,
         "Gold arc top endpoint (~76.4° on Circ.A)", ["arc_endpoint", "circ_A"])
 
-    # ══════════════════════════════════════
-    # METADATA
-    # ══════════════════════════════════════
+    return points, intersections
+
+
+def generate_field(params: FieldParams | None = None) -> dict[str, Any]:
+    if params is None:
+        params = FieldParams()
+
+    d = _compute_derived(params)
+    shapes = _build_field_shapes(d)
+    points, intersections = _build_field_points(d)
+
     metadata = {
-        "root": {"cx": cx, "cy": cy, "R_GREEN": RG},
+        "root": {"cx": d["cx"], "cy": d["cy"], "R_GREEN": d["RG"]},
         "derived": {
-            "R_D": round(R_D, 6), "R_A": round(R_A, 6),
-            "R_VERTEX": round(R_VERTEX, 6),
-            "x_sqB_left": round(x_sqB_left, 6),
-            "x_sqA_v2": round(x_sqA_v2, 6),
-            "x_rect_right": round(x_rect_right, 6),
-            "x_center": round(x_center, 6),
+            "R_D": round(d["R_D"], 6), "R_A": round(d["R_A"], 6),
+            "R_VERTEX": round(d["R_VERTEX"], 6),
+            "x_sqB_left": round(d["x_sqB_left"], 6),
+            "x_sqA_v2": round(d["x_sqA_v2"], 6),
+            "x_rect_right": round(d["x_rect_right"], 6),
+            "x_center": round(d["x_center"], 6),
         },
         "counts": {"shapes": len(shapes), "points": len(points),
                    "intersections": len(intersections)},

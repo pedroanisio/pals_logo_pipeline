@@ -459,7 +459,8 @@ class TestNibEmbedding:
 
     def test_ink_origin_in_js(self, rendered_html, layout_data):
         ink = [el for el in layout_data["elements"] if el["type"] == "ink_origin"][0]
-        x_str = f"{ink['x']:.1f}"
-        y_str = f"{ink['y']:.1f}"
-        assert x_str in rendered_html or str(ink["x"]) in rendered_html
-        assert y_str in rendered_html or str(ink["y"]) in rendered_html
+        # Render.py rounds coordinates to 4 decimal places in the JS output
+        x_candidates = [f"{ink['x']:.1f}", f"{ink['x']:.4f}", str(ink["x"])]
+        y_candidates = [f"{ink['y']:.1f}", f"{ink['y']:.4f}", str(ink["y"])]
+        assert any(s in rendered_html for s in x_candidates), f"ink x not in HTML: tried {x_candidates}"
+        assert any(s in rendered_html for s in y_candidates), f"ink y not in HTML: tried {y_candidates}"
