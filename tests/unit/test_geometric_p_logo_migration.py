@@ -32,7 +32,7 @@ class TestSchemaMatchesCurrentFile:
 
             with open(tmp) as f:
                 new = json.load(f)
-            with open(ROOT / "build" / "p_logo_schema.json") as f:
+            with open(ROOT / "build" / "logos" / "p_logo_schema.json") as f:
                 old = json.load(f)
 
             # Node positions
@@ -57,7 +57,7 @@ class TestSchemaMatchesCurrentFile:
         from p_logo.exporters.json_export import schema_to_dict
 
         new = schema_to_dict(build_schema())
-        with open(ROOT / "build" / "p_logo_schema.json") as f:
+        with open(ROOT / "build" / "logos" / "p_logo_schema.json") as f:
             old = json.load(f)
 
         assert len(new["graph"]["nodes"]) == len(old["graph"]["nodes"])

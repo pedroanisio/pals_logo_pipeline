@@ -868,9 +868,9 @@ def write_render(
     palette: dict, layout: dict, animations: dict
 ) -> Path:
     html = build_render(palette, layout, animations)
-    out_dir = Path(__file__).parent / "build"
-    out_dir.mkdir(exist_ok=True)
-    out_path = out_dir / "logo.html"
+    out_dir = Path(__file__).parent.parent.parent / "build" / "logos"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "p_logo_pipeline.html"
     with open(out_path, "w") as f:
         f.write(html)
     return out_path
@@ -900,7 +900,7 @@ def main() -> int:
 
     out_path = write_render(palette, layout, animations)
     size_kb = out_path.stat().st_size / 1024
-    print(f"logo.html written to {out_path} ({size_kb:.1f} KB)")
+    print(f"p_logo_pipeline.html written to {out_path} ({size_kb:.1f} KB)")
     print("  Validation: PASSED")
     return 0
 

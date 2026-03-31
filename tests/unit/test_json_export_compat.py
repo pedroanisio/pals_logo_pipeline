@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "src"))
 
 @pytest.fixture(scope="module")
 def old_schema():
-    with open(ROOT / "build" / "p_logo_schema.json") as f:
+    with open(ROOT / "build" / "logos" / "p_logo_schema.json") as f:
         return json.load(f)
 
 

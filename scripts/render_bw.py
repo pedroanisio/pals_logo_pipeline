@@ -2,9 +2,9 @@
 """
 Geometric P Logo — B&W renderer + schema exporter.
 
-Thin wrapper around the p_logo library. Produces:
-  - p_logo_wb.png / p_logo_bw.png (800×800 clean B&W)
-  - p_logo_overlay_wb.png / p_logo_overlay_bw.png (2000×2000 with composition overlay)
+Thin wrapper around the p_logo library. Outputs to build/logos/:
+  - p_logo_bw_dark.png / p_logo_bw_light.png (800×800 clean B&W)
+  - p_logo_bw_overlay_dark.png / light.png (2000×2000 with composition overlay)
   - p_logo_schema.json (canonical schema)
 """
 
@@ -23,6 +23,8 @@ from p_logo import build_schema
 from p_logo.exporters.json_export import export_json
 from p_logo.renderers.matplotlib_bw import MatplotlibBWRenderer
 from p_logo.overlay import render_overlay
+
+LOGOS_DIR = Path(__file__).parent.parent / "build" / "logos"
 
 
 def render_with_overlay(schema, output_path, dpi=600, size=2000):
@@ -101,28 +103,34 @@ def main():
     parser.add_argument("--dpi", type=int, default=600)
     args = parser.parse_args()
 
+    LOGOS_DIR.mkdir(parents=True, exist_ok=True)
     schema = build_schema()
 
     # Clean B&W renders
     renderer = MatplotlibBWRenderer(schema)
-    renderer.render("p_logo_wb.png", dpi=args.dpi)
-    renderer.render("p_logo_bw.png", dpi=args.dpi, invert=True)
-    print("Done — p_logo_wb.png + p_logo_bw.png")
+    renderer.render(str(LOGOS_DIR / "p_logo_bw_dark.png"), dpi=args.dpi)
+    renderer.render(str(LOGOS_DIR / "p_logo_bw_light.png"), dpi=args.dpi, invert=True)
+    print("Done — p_logo_bw_dark.png + p_logo_bw_light.png")
 
     # Overlay renders
     if not args.no_overlay:
-        render_with_overlay(schema, "p_logo_overlay_raw.png", dpi=args.dpi)
-        fit_to_canvas("p_logo_overlay_raw.png", "p_logo_overlay_wb.png", size=2000)
-        img_ov = Image.open("p_logo_overlay_wb.png")
-        ImageChops.invert(img_ov).save("p_logo_overlay_bw.png")
+        raw_path = str(LOGOS_DIR / "_p_logo_bw_overlay_raw.png")
+        dark_path = str(LOGOS_DIR / "p_logo_bw_overlay_dark.png")
+        light_path = str(LOGOS_DIR / "p_logo_bw_overlay_light.png")
+        render_with_overlay(schema, raw_path, dpi=args.dpi)
+        fit_to_canvas(raw_path, dark_path, size=2000)
+        img_ov = Image.open(dark_path)
+        ImageChops.invert(img_ov).save(light_path)
         import os
-        os.remove("p_logo_overlay_raw.png")
-        print("Done — p_logo_overlay_wb/bw.png")
+        os.remove(raw_path)
+        print("Done — p_logo_bw_overlay_dark/light.png")
 
     # Schema export
     if not args.no_schema:
-        export_json(schema, "p_logo_schema.json")
+        export_json(schema, str(LOGOS_DIR / "p_logo_schema.json"))
         print(f"Schema exported → p_logo_schema.json ({schema.node_count} nodes, {schema.edge_count} edges)")
+
+    print(f"All outputs in {LOGOS_DIR}")
 
 
 if __name__ == "__main__":

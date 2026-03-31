@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT / "src"))
 # ── Snapshot current schema as ground truth ──────────────────────
 @pytest.fixture(scope="module")
 def schema():
-    schema_path = ROOT / "build" / "p_logo_schema.json"
+    schema_path = ROOT / "build" / "logos" / "p_logo_schema.json"
     assert schema_path.exists(), "Run geometric_p_logo.py first to generate schema"
     with open(schema_path) as f:
         return json.load(f)

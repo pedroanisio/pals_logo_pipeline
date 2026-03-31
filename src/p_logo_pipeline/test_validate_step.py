@@ -91,8 +91,13 @@ def anim_data(build_dir) -> dict:
 
 
 @pytest.fixture(scope="session")
-def logo_html(build_dir) -> str:
-    with open(build_dir / "logo.html") as f:
+def logos_dir() -> Path:
+    return Path(__file__).parent.parent.parent / "build" / "logos"
+
+
+@pytest.fixture(scope="session")
+def logo_html(logos_dir) -> str:
+    with open(logos_dir / "p_logo_pipeline.html") as f:
         return f.read()
 
 

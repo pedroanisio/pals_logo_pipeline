@@ -424,10 +424,10 @@ class TestFileOutput:
 
     def test_file_created(self, rendered_path):
         assert rendered_path.exists()
-        assert rendered_path.name == "logo.html"
+        assert rendered_path.name == "p_logo_pipeline.html"
 
-    def test_file_in_build(self, rendered_path):
-        assert rendered_path.parent.name == "build"
+    def test_file_in_logos_dir(self, rendered_path):
+        assert rendered_path.parent.name == "logos"
 
     def test_file_is_nonempty(self, rendered_path):
         assert rendered_path.stat().st_size > 1000

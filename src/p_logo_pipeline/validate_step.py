@@ -324,26 +324,34 @@ def build_report(
 
 def main() -> int:
     build_dir = Path(__file__).parent / "build"
-    required = [
+    logos_dir = Path(__file__).parent.parent.parent / "build" / "logos"
+
+    # JSON intermediates live in the pipeline build dir
+    json_files = [
         "palette.json", "graph.json", "nib.json", "arcs.json",
-        "layout.json", "animations.json", "logo.html",
+        "layout.json", "animations.json",
     ]
     data: dict[str, Any] = {}
-    for name in required:
+    for name in json_files:
         path = build_dir / name
         if not path.exists():
             print(f"ERROR: {path} not found.", file=sys.stderr)
             return 1
         with open(path) as f:
-            if name.endswith(".json"):
-                data[name] = json.load(f)
-            else:
-                data[name] = f.read()
+            data[name] = json.load(f)
+
+    # Final HTML lives in the unified logos dir
+    html_path = logos_dir / "p_logo_pipeline.html"
+    if not html_path.exists():
+        print(f"ERROR: {html_path} not found.", file=sys.stderr)
+        return 1
+    with open(html_path) as f:
+        html = f.read()
 
     report = build_report(
         data["palette.json"], data["graph.json"], data["nib.json"],
         data["arcs.json"], data["layout.json"], data["animations.json"],
-        data["logo.html"]
+        html
     )
 
     # Print report

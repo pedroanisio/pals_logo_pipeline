@@ -679,13 +679,13 @@ animate();
 
 def main() -> int:
     html = build_overlay()
-    out_dir = Path(__file__).parent / "build"
-    out_dir.mkdir(exist_ok=True)
-    out_path = out_dir / "logo_overlay.html"
+    out_dir = Path(__file__).parent.parent.parent / "build" / "logos"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    out_path = out_dir / "p_logo_pipeline_overlay.html"
     with open(out_path, "w") as f:
         f.write(html)
     size_kb = out_path.stat().st_size / 1024
-    print(f"logo_overlay.html written to {out_path} ({size_kb:.1f} KB)")
+    print(f"p_logo_pipeline_overlay.html written to {out_path} ({size_kb:.1f} KB)")
     print("  Phase 1 (0–4s):   Plane A draws in")
     print("  Phase 2 (4–8s):   Projection highlights")
     print("  Phase 3 (8–12s):  Cross-fade")

@@ -1,3 +1,5 @@
 /.pytest_cache
 /.venv
 /build
+.claude/settings.json
+*.pyc
