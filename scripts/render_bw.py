@@ -21,6 +21,7 @@ from PIL import Image, ImageChops
 
 from p_logo import build_schema
 from p_logo.exporters.json_export import export_json
+from p_logo.exporters.node_colors import compute_degrees, node_core_radius
 from p_logo.renderers.matplotlib_bw import MatplotlibBWRenderer
 from p_logo.overlay import render_overlay
 
@@ -63,11 +64,13 @@ def render_with_overlay(schema, output_path, dpi=600, size=2000):
             color=bg, lw=stroke * 0.5, zorder=3)
     ax.add_patch(plt.Circle(nib.ball_pos, nib.ball_radius, fc=w, ec=w, lw=1.0, zorder=5))
 
-    # Nodes
+    # Nodes (canonical degree-based sizing)
+    degrees = compute_degrees(schema)
     for n in schema.nodes:
         if n.id == 14:
             continue
-        ax.add_patch(plt.Circle((n.x, n.y), 0.09, fc=w, ec=w, lw=1.2, zorder=6))
+        r = node_core_radius(schema.r_green, degrees[n.id])
+        ax.add_patch(plt.Circle((n.x, n.y), r, fc=w, ec=w, lw=1.2, zorder=6))
 
     # Overlay: composition shapes
     render_overlay(ax, schema, zorder=20)

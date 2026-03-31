@@ -10,6 +10,7 @@ from PIL import Image, ImageChops
 
 from p_logo.types import PLogoSchema
 from p_logo.renderers.base import PLogoRenderer
+from p_logo.exporters.node_colors import compute_degrees, node_core_radius
 
 
 class MatplotlibBWRenderer(PLogoRenderer):
@@ -65,11 +66,13 @@ class MatplotlibBWRenderer(PLogoRenderer):
         ax.add_patch(plt.Circle(nib.ball_pos, nib.ball_radius,
                                 fc=w, ec=w, lw=1.0, zorder=5))
 
-        # Nodes
+        # Nodes (canonical degree-based sizing)
+        degrees = compute_degrees(s)
         for n in s.nodes:
             if n.id == 14:
                 continue
-            ax.add_patch(plt.Circle((n.x, n.y), 0.09, fc=w, ec=w,
+            r = node_core_radius(s.r_green, degrees[n.id])
+            ax.add_patch(plt.Circle((n.x, n.y), r, fc=w, ec=w,
                                     lw=1.2, zorder=6))
 
         plt.tight_layout(pad=0)

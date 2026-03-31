@@ -288,14 +288,12 @@ class TestJunctionNode:
         node = default_graph["nodes"][ji]
         assert node["color"] == "amber"
 
-    def test_junction_has_larger_radius(self, default_graph, palette):
-        """Junction node uses the larger 'junction' radius from palette."""
+    def test_junction_has_largest_radius(self, default_graph):
+        """Junction node (highest degree) must have the largest radius."""
         ji = default_graph["stats"]["junction_index"]
-        node = default_graph["nodes"][ji]
-        junction_r = palette["sizing"]["node_radius"]["junction"]
-        default_r = palette["sizing"]["node_radius"]["default"]
-        assert abs(node["radius"] - junction_r) < 1e-6
-        assert node["radius"] > default_r
+        junction_r = default_graph["nodes"][ji]["radius"]
+        for node in default_graph["nodes"]:
+            assert node["radius"] <= junction_r + 1e-6
 
     def test_junction_connects_stem_and_bowl(self, default_graph):
         """The junction node's neighbors should include nodes from both
@@ -501,15 +499,16 @@ class TestColorAssignments:
 
 class TestPaletteDependency:
 
-    def test_node_radii_from_palette(self, default_graph, palette):
-        junction_r = palette["sizing"]["node_radius"]["junction"]
-        default_r = palette["sizing"]["node_radius"]["default"]
-        ji = default_graph["stats"]["junction_index"]
+    def test_node_radii_are_canonical_degree_based(self, default_graph):
+        """Node radii must follow the canonical √2-chain formula from node_core_radius."""
+        from p_logo.exporters.node_colors import node_core_radius
+        from p_logo.schema import DEFAULT_R_GREEN
         for node in default_graph["nodes"]:
-            if node["index"] == ji:
-                assert abs(node["radius"] - junction_r) < 1e-6
-            else:
-                assert abs(node["radius"] - default_r) < 1e-6
+            expected = node_core_radius(DEFAULT_R_GREEN, node["degree"])
+            assert abs(node["radius"] - expected) < 1e-6, (
+                f"Node {node['index']} radius {node['radius']} != "
+                f"canonical {expected} for degree {node['degree']}"
+            )
 
     def test_edge_thickness_in_output(self, default_graph, palette):
         """Graph output must include the edge thickness from palette."""

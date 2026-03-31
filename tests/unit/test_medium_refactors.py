@@ -289,4 +289,4 @@ class TestNibElements:
 class TestLayoutDeterminism:
     def test_layout_hash(self, layout):
         h = hashlib.sha256(json.dumps(layout, sort_keys=True).encode()).hexdigest()
-        assert h[:16] == "e0b13732d87d7227"
+        assert h[:16] == "3c85c066a9066ed1"

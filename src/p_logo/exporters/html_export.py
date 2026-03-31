@@ -10,7 +10,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from p_logo.types import PLogoSchema
-from p_logo.exporters.node_colors import resolve_node_color, ARC_STYLES
+from p_logo.exporters.node_colors import (
+    resolve_node_color, ARC_STYLES, compute_degrees, node_core_radius,
+)
 
 
 # ── Schema → JS data ─────────────────────────────────────────
@@ -23,17 +25,15 @@ def schema_to_js_data(schema: PLogoSchema) -> dict:
     Color assignments use string keys (resolved to THREE.Color in the template).
     """
 
-    # Nodes
+    # Nodes (canonical degree-based sizing)
+    degrees = compute_degrees(schema)
     wire_nodes = []
     for node in schema.nodes:
         col = resolve_node_color(node)
-        # N24 (bump hub) is key_node=False in schema but sz=1 in revision HTML
-        sz = 1 if node.key_node or node.composition_point == "P.BUMP.HUB" else 0
         wire_nodes.append({
             "x": node.x,
             "y": node.y,
             "col": col,
-            "sz": sz,
         })
 
     # Edges

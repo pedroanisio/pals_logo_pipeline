@@ -48,11 +48,12 @@ def _is_connected(n: int, adj: dict[str, list[int]]) -> bool:
     return len(visited) == n
 
 
-# ── Module-level data (loaded lazily from projection) ──
+# ── Projection data (loaded once at import, cached) ──
 _projection: dict[str, Any] | None = None
 
 
 def _load_projection() -> dict[str, Any]:
+    """Load projection.json once and cache it."""
     global _projection
     if _projection is None:
         p_path = Path(__file__).parent / "build" / "projection.json"
@@ -61,55 +62,21 @@ def _load_projection() -> dict[str, Any]:
     return _projection
 
 
-def _get_positions() -> list[tuple[float, float]]:
-    proj = _load_projection()
+def _extract_from_projection(proj: dict) -> tuple[
+    list[tuple[float, float]], list[tuple[int, int]], list[str], int
+]:
+    """Extract positions, edges, colors, and junction index from projection data."""
     nodes = sorted(proj["nodes"], key=lambda n: n["index"])
-    return [(n["x"], n["y"]) for n in nodes]
+    positions = [(n["x"], n["y"]) for n in nodes]
+    edges = [(e[0], e[1]) for e in proj["edges"]]
+    colors = [n["color"] for n in nodes]
+    junction = proj["junction_index"]
+    return positions, edges, colors, junction
 
 
-def _get_edges() -> list[tuple[int, int]]:
-    proj = _load_projection()
-    return [(e[0], e[1]) for e in proj["edges"]]
-
-
-def _get_colors() -> list[str]:
-    proj = _load_projection()
-    nodes = sorted(proj["nodes"], key=lambda n: n["index"])
-    return [n["color"] for n in nodes]
-
-
-def _get_junction() -> int:
-    return _load_projection()["junction_index"]
-
-
-# Public API (needed by test_graph.py)
-@property
-def _lazy_positions():
-    return _get_positions()
-
-NODE_POSITIONS = property(lambda self: _get_positions())
-
-
-# Eagerly loaded for test compatibility
-class _LazyData:
-    @staticmethod
-    def load():
-        p_path = Path(__file__).parent / "build" / "projection.json"
-        with open(p_path) as f:
-            proj = json.load(f)
-        nodes = sorted(proj["nodes"], key=lambda n: n["index"])
-        positions = [(n["x"], n["y"]) for n in nodes]
-        edges = [(e[0], e[1]) for e in proj["edges"]]
-        colors = [n["color"] for n in nodes]
-        junction = proj["junction_index"]
-        return positions, edges, colors, junction
-
-
-_pos, _edg, _col, _jun = _LazyData.load()
-NODE_POSITIONS: list[tuple[float, float]] = _pos
-EDGES: list[tuple[int, int]] = _edg
-NODE_COLORS: list[str] = _col
-JUNCTION_NODE_INDEX: int = _jun
+# Public module-level constants (consumed by test_graph.py, validate, build_graph)
+_proj_data = _load_projection()
+NODE_POSITIONS, EDGES, NODE_COLORS, JUNCTION_NODE_INDEX = _extract_from_projection(_proj_data)
 
 
 def validate(palette: dict) -> list[str]:
@@ -149,25 +116,23 @@ def build_graph(palette: dict) -> dict[str, Any]:
     n = len(NODE_POSITIONS)
     adj = _build_adjacency(n, EDGES)
     degrees = _compute_degrees(n, adj)
-    junction_r = palette["sizing"]["node_radius"]["junction"]
-    default_r = palette["sizing"]["node_radius"]["default"]
+    # Canonical degree-based node radii (from node_colors.py √2-chain)
+    from p_logo.exporters.node_colors import node_core_radius
+    from p_logo.schema import DEFAULT_R_GREEN
+    r_green = DEFAULT_R_GREEN
 
     nodes = []
     for i, (x, y) in enumerate(NODE_POSITIONS):
         nodes.append({
             "index": i, "x": x, "y": y,
             "color": NODE_COLORS[i],
-            "radius": junction_r if i == JUNCTION_NODE_INDEX else default_r,
+            "radius": round(node_core_radius(r_green, degrees[i]), 6),
             "degree": degrees[i],
         })
 
-    # Load typed edges from projection
-    proj_path = Path(__file__).parent / "build" / "projection.json"
-    typed_edges_raw = []
-    if proj_path.exists():
-        with open(proj_path) as f:
-            proj = json.load(f)
-        typed_edges_raw = proj.get("typed_edges", [])
+    # Typed edges from cached projection (no redundant file read)
+    proj = _load_projection()
+    typed_edges_raw = proj.get("typed_edges", [])
 
     # Build edge type lookup
     edge_type_map = {}

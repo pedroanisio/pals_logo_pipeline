@@ -52,14 +52,6 @@ class TestWireNodes:
             assert "x" in n
             assert "y" in n
             assert "col" in n
-            assert "sz" in n
-
-    def test_sz_matches_key_node(self, js_data, schema):
-        for i, n in enumerate(js_data["wireNodes"]):
-            # N24 (bump hub) is key_node=False in schema but sz=1 in revision HTML
-            is_bump_hub = schema.node(i).composition_point == "P.BUMP.HUB"
-            expected_sz = 1 if schema.node(i).key_node or is_bump_hub else 0
-            assert n["sz"] == expected_sz, f"Node {i}: sz={n['sz']} expected={expected_sz}"
 
 
 # ── Node color assignment tests ───────────────────────────────

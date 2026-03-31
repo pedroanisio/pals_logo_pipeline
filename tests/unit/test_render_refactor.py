@@ -179,4 +179,4 @@ class TestDeterminism:
 
     def test_output_hash_matches_snapshot(self, html):
         h = hashlib.sha256(html.encode()).hexdigest()
-        assert h[:16] == "d37f96391f78044d"
+        assert h[:16] == "dbc0f9002467a69b"

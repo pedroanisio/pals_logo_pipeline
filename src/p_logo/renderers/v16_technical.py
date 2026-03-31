@@ -10,6 +10,7 @@ import matplotlib.patches as patches
 
 from p_logo.types import PLogoSchema
 from p_logo.renderers.base import PLogoRenderer
+from p_logo.exporters.node_colors import compute_degrees, node_core_radius
 
 
 class V16TechnicalRenderer(PLogoRenderer):
@@ -165,10 +166,12 @@ class V16TechnicalRenderer(PLogoRenderer):
 
     def _draw_nodes(self, ctx):
         ax, s, ink = ctx["ax"], ctx["s"], ctx["ink"]
+        degrees = compute_degrees(s)
         for n in s.nodes:
             if n.id == 14:
                 continue
-            ax.add_patch(plt.Circle((n.x, n.y), 0.055, fc=ink, ec='#888888',
+            r = node_core_radius(s.r_green, degrees[n.id])
+            ax.add_patch(plt.Circle((n.x, n.y), r, fc=ink, ec='#888888',
                          lw=0.4, alpha=0.6, zorder=5))
 
     def _draw_hatching(self, ctx):

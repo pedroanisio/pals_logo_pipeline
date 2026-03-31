@@ -9,6 +9,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import Arc, Circle
 from PIL import Image
+from p_logo.exporters.node_colors import compute_degrees, node_core_radius
 
 from p_logo.types import PLogoSchema
 
@@ -55,12 +56,13 @@ def _draw_frame(ax, schema, phase, bg_color, palette):
             color=palette["blueglow"], lw=0.8, alpha=0.4, zorder=3)
     ax.add_patch(Circle(nib.ball_pos, 0.05, fc=palette["copper"], ec=palette["copper"], zorder=4))
 
-    # Nodes
+    # Nodes (canonical degree-based sizing)
+    degrees = compute_degrees(schema)
     for n in schema.nodes:
         if n.id == 14:
             continue
         pulse = 0.5 + 0.5 * np.sin(phase * 12.0 + n.id * 1.1)
-        r = 0.07 if n.key_node else 0.045
+        r = node_core_radius(schema.r_green, degrees[n.id])
         ax.add_patch(Circle((n.x, n.y), r, fc=palette["copper"],
                             ec=palette["copper"], alpha=0.65 + 0.35 * pulse, zorder=5))
 

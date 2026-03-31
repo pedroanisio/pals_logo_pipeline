@@ -7,6 +7,9 @@ import random
 from collections import defaultdict
 from p_logo.types import PLogoSchema
 from p_logo.renderers.base import PLogoRenderer
+from p_logo.exporters.node_colors import (
+    compute_degrees, node_core_radius, node_glow_radius, GLOW_SCALE,
+)
 
 try:
     import cairo
@@ -167,17 +170,20 @@ class CairoCraftedRenderer(PLogoRenderer):
 
     def _draw_nodes(self, ctx, pal, ppu, debug):
         s = self.schema
+        degrees = compute_degrees(s)
         for n in s.nodes:
             px, py = self._to_px(n.x, n.y, ppu)
             col = pal[NODE_COLORS.get(n.id, "copper")]
-            cr = (6.0 if n.key_node else 3.8) * P_SCALE * (1.5 if debug else 1.0)
+            deg = degrees[n.id]
+            core_r = node_core_radius(s.r_green, deg)
+            cr = core_r * ppu * (1.5 if debug else 1.0)
 
             if not debug:
-                gr = (22 if n.key_node else 14) * P_SCALE
+                gr = node_glow_radius(core_r) * ppu
                 for l in range(8):
                     t = l / 8
                     r = gr * (0.15 + 0.85 * t)
-                    a = (0.4 if n.key_node else 0.28) * (1 - t) ** 2
+                    a = (0.4 + 0.08 * deg) * (1 - t) ** 2
                     pat = cairo.RadialGradient(px, py, 0, px, py, r)
                     pat.add_color_stop_rgba(0, *col, a)
                     pat.add_color_stop_rgba(1, *col, 0)
@@ -188,7 +194,8 @@ class CairoCraftedRenderer(PLogoRenderer):
             ctx.set_source_rgba(*col, 1.0)
             ctx.arc(px, py, cr, 0, 2 * math.pi)
             ctx.fill()
-            ctx.set_source_rgba(1, 1, 1, 0.35 if n.key_node else 0.2)
+            highlight_a = 0.2 + 0.025 * deg
+            ctx.set_source_rgba(1, 1, 1, highlight_a)
             ctx.arc(px, py, cr * 0.35, 0, 2 * math.pi)
             ctx.fill()
 

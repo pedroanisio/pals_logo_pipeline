@@ -29,6 +29,8 @@ from typing import Any
 # CANONICAL GEOMETRY — from p_logo library
 # (single source of truth for edges, arcs, and
 #  non-nib node coordinates)
+#
+# Deferred: schema is built on first access, not at import time.
 # ══════════════════════════════════════════════
 
 import sys as _sys
@@ -37,15 +39,36 @@ if _parent not in _sys.path:
     _sys.path.append(_parent)  # append, not insert — don't override existing paths
 from p_logo import build_schema as _build_schema
 
-_SCHEMA = _build_schema()
+_SCHEMA = None
+
+
+def _get_schema():
+    """Return the cached canonical schema, building it on first access."""
+    global _SCHEMA
+    if _SCHEMA is None:
+        _SCHEMA = _build_schema()
+    return _SCHEMA
+
 
 # ──────────────────────────────────────────────
 # 44 TYPED EDGES — derived from p_logo schema
 # ──────────────────────────────────────────────
 
-DEFAULT_EDGE_RULES: list[tuple[int, int, str]] = [
-    (e.from_id, e.to_id, e.edge_type) for e in _SCHEMA.edges
-]
+# Deferred: built on first access
+_DEFAULT_EDGE_RULES = None
+
+
+def _get_default_edge_rules():
+    global _DEFAULT_EDGE_RULES
+    if _DEFAULT_EDGE_RULES is None:
+        s = _get_schema()
+        _DEFAULT_EDGE_RULES = [(e.from_id, e.to_id, e.edge_type) for e in s.edges]
+    return _DEFAULT_EDGE_RULES
+
+
+# Eagerly populate for backward compatibility (modules that import the constant).
+# The schema is still built only once via _get_schema() caching.
+DEFAULT_EDGE_RULES: list[tuple[int, int, str]] = _get_default_edge_rules()
 
 # ──────────────────────────────────────────────
 # NODE METADATA — pipeline-specific fields per node
@@ -107,13 +130,24 @@ ARC_METADATA: dict[str, dict[str, str]] = {
     "Gold":  {"color": "amber",     "source_shape": "Circ.A"},
 }
 
-DEFAULT_ARC_SEGMENTS: list[dict[str, Any]] = [
-    {"source_shape": ARC_METADATA[a.name]["source_shape"],
-     "color": ARC_METADATA[a.name]["color"],
-     "start_angle": a.start_angle, "end_angle": a.end_angle,
-     "_cx": a.cx, "_cy": a.cy, "_radius": a.radius}
-    for a in _SCHEMA.arcs
-]
+_DEFAULT_ARC_SEGMENTS = None
+
+
+def _get_default_arc_segments():
+    global _DEFAULT_ARC_SEGMENTS
+    if _DEFAULT_ARC_SEGMENTS is None:
+        s = _get_schema()
+        _DEFAULT_ARC_SEGMENTS = [
+            {"source_shape": ARC_METADATA[a.name]["source_shape"],
+             "color": ARC_METADATA[a.name]["color"],
+             "start_angle": a.start_angle, "end_angle": a.end_angle,
+             "_cx": a.cx, "_cy": a.cy, "_radius": a.radius}
+            for a in s.arcs
+        ]
+    return _DEFAULT_ARC_SEGMENTS
+
+
+DEFAULT_ARC_SEGMENTS: list[dict[str, Any]] = _get_default_arc_segments()
 
 
 # ──────────────────────────────────────────────
@@ -125,9 +159,9 @@ def project(
     edge_rules=None,
     roles=None, arc_segments=None,
 ) -> dict[str, Any]:
-    edges = edge_rules or DEFAULT_EDGE_RULES
+    edges = edge_rules if edge_rules is not None else _get_default_edge_rules()
     role_spec = roles or DEFAULT_ROLES
-    arc_segs = arc_segments or DEFAULT_ARC_SEGMENTS
+    arc_segs = arc_segments if arc_segments is not None else _get_default_arc_segments()
 
     fp = field["points"]
     fs = field["shapes"]
@@ -150,7 +184,7 @@ def project(
             x, y = pt["x"], pt["y"]
         else:
             # Non-nib nodes: from p_logo canonical schema
-            sn = _SCHEMA.nodes[i]
+            sn = _get_schema().nodes[i]
             x, y = round(sn.x, 6), round(sn.y, 6)
 
         nodes.append({
