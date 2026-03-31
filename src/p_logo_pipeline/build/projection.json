@@ -1,0 +1,669 @@
+{
+  "_meta": {
+    "name": "projection",
+    "description": "Plane B: 25 nodes, 44 edges, 3 arcs. Grid + IS + bump nib."
+  },
+  "nodes": [
+    {
+      "index": 0,
+      "x": -1.389507,
+      "y": 2.609307,
+      "color": "copper",
+      "region": "stem",
+      "source_point": "P.SQB.UL",
+      "alias": "stem_top"
+    },
+    {
+      "index": 1,
+      "x": 0.3504,
+      "y": 2.609307,
+      "color": "amber",
+      "region": "top_bar",
+      "source_point": "P.GRID.center_x.sqB_top",
+      "alias": "top_bar_right"
+    },
+    {
+      "index": 2,
+      "x": 1.220353,
+      "y": 1.739353,
+      "color": "copper",
+      "region": "bowl",
+      "source_point": "P.SQD.V1",
+      "alias": "green_is_45"
+    },
+    {
+      "index": 3,
+      "x": 0.3504,
+      "y": -0.000553,
+      "color": "copper",
+      "region": "bowl",
+      "source_point": "P.CD.TAN.BOTTOM",
+      "alias": "blue_tan_bot"
+    },
+    {
+      "index": 4,
+      "x": -0.8799,
+      "y": 2.0997,
+      "color": "copper",
+      "region": "counter",
+      "source_point": "P.GRID.sqA_v2_x.green_tan_top",
+      "alias": "counter_tl"
+    },
+    {
+      "index": 5,
+      "x": 0.3504,
+      "y": 1.739353,
+      "color": "copper",
+      "region": "bowl",
+      "source_point": "P.CD.TAN.TOP",
+      "alias": "blue_tan_top"
+    },
+    {
+      "index": 6,
+      "x": 1.220353,
+      "y": 0.8694,
+      "color": "blue_glow",
+      "region": "bowl",
+      "source_point": "P.CD.TAN.RIGHT",
+      "alias": "blue_tan_right"
+    },
+    {
+      "index": 7,
+      "x": -1.389507,
+      "y": -0.000553,
+      "color": "amber",
+      "region": "stem",
+      "source_point": "P.GRID.sqB_left.blue_tan_bot",
+      "alias": "junction_left"
+    },
+    {
+      "index": 8,
+      "x": -0.370293,
+      "y": -0.000553,
+      "color": "copper",
+      "region": "counter",
+      "source_point": "P.GRID.rect_right.blue_tan_bot",
+      "alias": "counter_br"
+    },
+    {
+      "index": 9,
+      "x": -0.8799,
+      "y": -0.3609,
+      "color": "amber",
+      "region": "counter",
+      "source_point": "P.GRID.sqA_v2_x.green_tan_bot",
+      "alias": "triangle_vertex"
+    },
+    {
+      "index": 10,
+      "x": -0.370293,
+      "y": -0.870507,
+      "color": "copper",
+      "region": "nib_area",
+      "source_point": "P.GRID.rect_right.sqB_bot",
+      "alias": "nib_shoulder_right"
+    },
+    {
+      "index": 11,
+      "x": -1.389507,
+      "y": -0.870507,
+      "color": "amber",
+      "region": "stem",
+      "source_point": "P.SQB.LL",
+      "alias": "stem_shoulder"
+    },
+    {
+      "index": 12,
+      "x": -0.8799,
+      "y": -2.399328,
+      "color": "copper",
+      "region": "nib",
+      "source_point": "P.NIB.RECT_I.TOP",
+      "alias": "nib_shoulder"
+    },
+    {
+      "index": 13,
+      "x": -0.8799,
+      "y": -2.908935,
+      "color": "copper",
+      "region": "nib",
+      "source_point": "P.NIB.RECT_I.CENTER",
+      "alias": "nib_ball"
+    },
+    {
+      "index": 14,
+      "x": -0.8799,
+      "y": -3.928149,
+      "color": "copper",
+      "region": "nib",
+      "source_point": "P.NIB.RECT_V.CENTER",
+      "alias": "nib_tip"
+    },
+    {
+      "index": 15,
+      "x": -0.370293,
+      "y": 1.739353,
+      "color": "copper",
+      "region": "counter",
+      "source_point": "P.GRID.rect_right.blue_tan_top",
+      "alias": "counter_tr"
+    },
+    {
+      "index": 16,
+      "x": -0.370293,
+      "y": -0.870507,
+      "color": "amber",
+      "region": "nib_area",
+      "source_point": "P.GRID.rect_right.sqB_bot",
+      "alias": "outer_D_stem"
+    },
+    {
+      "index": 17,
+      "x": 0.3504,
+      "y": -0.870507,
+      "color": "amber",
+      "region": "bowl",
+      "source_point": "P.CA.TAN.BOTTOM",
+      "alias": "gold_tan_bot"
+    },
+    {
+      "index": 18,
+      "x": 0.3504,
+      "y": -0.3609,
+      "color": "amber",
+      "region": "bowl",
+      "source_point": "P.CBA.TAN.BOTTOM",
+      "alias": "green_tan_bot"
+    },
+    {
+      "index": 19,
+      "x": 0.3504,
+      "y": 2.0997,
+      "color": "amber",
+      "region": "bowl",
+      "source_point": "P.CBA.TAN.TOP",
+      "alias": "green_tan_top"
+    },
+    {
+      "index": 20,
+      "x": 2.090307,
+      "y": 0.8694,
+      "color": "amber",
+      "region": "bowl",
+      "source_point": "P.CA.TAN.RIGHT",
+      "alias": "gold_tan_right"
+    },
+    {
+      "index": 21,
+      "x": 1.220353,
+      "y": -0.000553,
+      "color": "amber",
+      "region": "bowl",
+      "source_point": "P.SQD.V4",
+      "alias": "green_is_315"
+    },
+    {
+      "index": 22,
+      "x": -1.389507,
+      "y": -2.399328,
+      "color": "copper",
+      "region": "nib",
+      "source_point": "P.NIB.WAIST.LEFT",
+      "alias": "waist_left"
+    },
+    {
+      "index": 23,
+      "x": -0.370293,
+      "y": -2.399328,
+      "color": "copper",
+      "region": "nib",
+      "source_point": "P.NIB.WAIST.RIGHT",
+      "alias": "waist_right"
+    },
+    {
+      "index": 24,
+      "x": -0.8799,
+      "y": -1.634917,
+      "color": "copper",
+      "region": "nib",
+      "source_point": "P.NIB.BUMP.HUB",
+      "alias": "bump_hub"
+    }
+  ],
+  "edges": [
+    [
+      0,
+      1
+    ],
+    [
+      0,
+      7
+    ],
+    [
+      7,
+      11
+    ],
+    [
+      7,
+      8
+    ],
+    [
+      3,
+      8
+    ],
+    [
+      10,
+      16
+    ],
+    [
+      7,
+      9
+    ],
+    [
+      8,
+      9
+    ],
+    [
+      9,
+      10
+    ],
+    [
+      9,
+      11
+    ],
+    [
+      11,
+      22
+    ],
+    [
+      10,
+      23
+    ],
+    [
+      22,
+      23
+    ],
+    [
+      10,
+      22
+    ],
+    [
+      11,
+      23
+    ],
+    [
+      10,
+      24
+    ],
+    [
+      11,
+      24
+    ],
+    [
+      22,
+      24
+    ],
+    [
+      23,
+      24
+    ],
+    [
+      12,
+      24
+    ],
+    [
+      12,
+      22
+    ],
+    [
+      12,
+      23
+    ],
+    [
+      12,
+      13
+    ],
+    [
+      13,
+      14
+    ],
+    [
+      4,
+      9
+    ],
+    [
+      4,
+      19
+    ],
+    [
+      0,
+      4
+    ],
+    [
+      4,
+      15
+    ],
+    [
+      5,
+      15
+    ],
+    [
+      7,
+      15
+    ],
+    [
+      8,
+      15
+    ],
+    [
+      2,
+      5
+    ],
+    [
+      2,
+      6
+    ],
+    [
+      2,
+      20
+    ],
+    [
+      9,
+      18
+    ],
+    [
+      16,
+      17
+    ],
+    [
+      20,
+      21
+    ],
+    [
+      17,
+      21
+    ],
+    [
+      6,
+      20
+    ],
+    [
+      6,
+      21
+    ],
+    [
+      3,
+      18
+    ],
+    [
+      17,
+      18
+    ],
+    [
+      2,
+      21
+    ],
+    [
+      3,
+      21
+    ]
+  ],
+  "typed_edges": [
+    {
+      "a": 0,
+      "b": 1,
+      "type": "contour"
+    },
+    {
+      "a": 0,
+      "b": 7,
+      "type": "contour"
+    },
+    {
+      "a": 7,
+      "b": 11,
+      "type": "contour"
+    },
+    {
+      "a": 7,
+      "b": 8,
+      "type": "contour"
+    },
+    {
+      "a": 3,
+      "b": 8,
+      "type": "contour"
+    },
+    {
+      "a": 10,
+      "b": 16,
+      "type": "contour"
+    },
+    {
+      "a": 7,
+      "b": 9,
+      "type": "struct"
+    },
+    {
+      "a": 8,
+      "b": 9,
+      "type": "struct"
+    },
+    {
+      "a": 9,
+      "b": 10,
+      "type": "struct"
+    },
+    {
+      "a": 9,
+      "b": 11,
+      "type": "struct"
+    },
+    {
+      "a": 11,
+      "b": 22,
+      "type": "nib"
+    },
+    {
+      "a": 10,
+      "b": 23,
+      "type": "nib"
+    },
+    {
+      "a": 22,
+      "b": 23,
+      "type": "nib"
+    },
+    {
+      "a": 10,
+      "b": 22,
+      "type": "nib"
+    },
+    {
+      "a": 11,
+      "b": 23,
+      "type": "nib"
+    },
+    {
+      "a": 10,
+      "b": 24,
+      "type": "nib"
+    },
+    {
+      "a": 11,
+      "b": 24,
+      "type": "nib"
+    },
+    {
+      "a": 22,
+      "b": 24,
+      "type": "nib"
+    },
+    {
+      "a": 23,
+      "b": 24,
+      "type": "nib"
+    },
+    {
+      "a": 12,
+      "b": 24,
+      "type": "nib"
+    },
+    {
+      "a": 12,
+      "b": 22,
+      "type": "nib"
+    },
+    {
+      "a": 12,
+      "b": 23,
+      "type": "nib"
+    },
+    {
+      "a": 12,
+      "b": 13,
+      "type": "nib"
+    },
+    {
+      "a": 13,
+      "b": 14,
+      "type": "nib"
+    },
+    {
+      "a": 4,
+      "b": 9,
+      "type": "mesh"
+    },
+    {
+      "a": 4,
+      "b": 19,
+      "type": "mesh"
+    },
+    {
+      "a": 0,
+      "b": 4,
+      "type": "mesh"
+    },
+    {
+      "a": 4,
+      "b": 15,
+      "type": "mesh"
+    },
+    {
+      "a": 5,
+      "b": 15,
+      "type": "mesh"
+    },
+    {
+      "a": 7,
+      "b": 15,
+      "type": "mesh"
+    },
+    {
+      "a": 8,
+      "b": 15,
+      "type": "mesh"
+    },
+    {
+      "a": 2,
+      "b": 5,
+      "type": "mesh"
+    },
+    {
+      "a": 2,
+      "b": 6,
+      "type": "mesh"
+    },
+    {
+      "a": 2,
+      "b": 20,
+      "type": "mesh"
+    },
+    {
+      "a": 9,
+      "b": 18,
+      "type": "mesh"
+    },
+    {
+      "a": 16,
+      "b": 17,
+      "type": "mesh"
+    },
+    {
+      "a": 20,
+      "b": 21,
+      "type": "mesh"
+    },
+    {
+      "a": 17,
+      "b": 21,
+      "type": "mesh"
+    },
+    {
+      "a": 6,
+      "b": 20,
+      "type": "mesh"
+    },
+    {
+      "a": 6,
+      "b": 21,
+      "type": "mesh"
+    },
+    {
+      "a": 3,
+      "b": 18,
+      "type": "mesh"
+    },
+    {
+      "a": 17,
+      "b": 18,
+      "type": "mesh"
+    },
+    {
+      "a": 2,
+      "b": 21,
+      "type": "mesh"
+    },
+    {
+      "a": 3,
+      "b": 21,
+      "type": "mesh"
+    }
+  ],
+  "junction_index": 9,
+  "arc_definitions": [
+    {
+      "cx": 0.3504,
+      "cy": 0.8694,
+      "radius": 1.2303,
+      "start_angle": -1.570796,
+      "end_angle": 1.570796,
+      "color": "copper",
+      "source_shape": "Circ.Bounds.A"
+    },
+    {
+      "cx": 0.3504,
+      "cy": 0.8694,
+      "radius": 0.869953,
+      "start_angle": -1.570796,
+      "end_angle": 1.570796,
+      "color": "blue_glow",
+      "source_shape": "Circ.D"
+    },
+    {
+      "cx": 0.3504,
+      "cy": 0.8694,
+      "radius": 1.739907,
+      "start_angle": -1.570796,
+      "end_angle": 1.570796,
+      "color": "amber",
+      "source_shape": "Circ.A"
+    }
+  ],
+  "provenance": {
+    "field_points_total": 76,
+    "field_shapes_total": 9,
+    "nodes_selected": 25,
+    "selection_ratio": 0.3289
+  }
+}

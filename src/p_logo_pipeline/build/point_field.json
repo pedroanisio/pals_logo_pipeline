@@ -1,0 +1,925 @@
+{
+  "_meta": {
+    "name": "point_field",
+    "description": "Plane A: Grid intersection system. 4 x-columns \u00d7 7 y-rows + IS vertices + nib."
+  },
+  "metadata": {
+    "root": {
+      "cx": 0.3504,
+      "cy": 0.8694,
+      "R_GREEN": 1.2303
+    },
+    "derived": {
+      "R_D": 0.869953,
+      "R_A": 1.739907,
+      "R_VERTEX": 0.509607,
+      "x_sqB_left": -1.389507,
+      "x_sqA_v2": -0.8799,
+      "x_rect_right": -0.370293,
+      "x_center": 0.3504
+    },
+    "counts": {
+      "shapes": 9,
+      "points": 76,
+      "intersections": 0
+    }
+  },
+  "shapes": {
+    "Circ.A": {
+      "type": "circle",
+      "name": "Circ.A",
+      "center": {
+        "x": 0.3504,
+        "y": 0.8694
+      },
+      "radius": 1.739907,
+      "role": "Gold arc (outer). R = R_GREEN\u00d7\u221a2."
+    },
+    "Circ.Bounds.A": {
+      "type": "circle",
+      "name": "Circ.Bounds.A",
+      "center": {
+        "x": 0.3504,
+        "y": 0.8694
+      },
+      "radius": 1.2303,
+      "role": "Green arc (middle). R = R_GREEN (free parameter)."
+    },
+    "Circ.D": {
+      "type": "circle",
+      "name": "Circ.D",
+      "center": {
+        "x": 0.3504,
+        "y": 0.8694
+      },
+      "radius": 0.869953,
+      "role": "Blue arc (inner). R = R_GREEN/\u221a2."
+    },
+    "Square.B": {
+      "type": "square",
+      "name": "Square.B",
+      "vertices": {
+        "UL": {
+          "x": -1.389507,
+          "y": 2.609307
+        },
+        "UR": {
+          "x": 2.090307,
+          "y": 2.609307
+        },
+        "LL": {
+          "x": -1.389507,
+          "y": -0.870507
+        },
+        "LR": {
+          "x": 2.090307,
+          "y": -0.870507
+        }
+      },
+      "role": "Circumscribes Circ.A. Defines stem_x and outer y-rows."
+    },
+    "Square.A": {
+      "type": "square",
+      "name": "Square.A",
+      "vertices": {
+        "V1": {
+          "x": 1.5807,
+          "y": 2.0997
+        },
+        "V2": {
+          "x": -0.8799,
+          "y": 2.0997
+        },
+        "V3": {
+          "x": -0.8799,
+          "y": -0.3609
+        },
+        "V4": {
+          "x": 1.5807,
+          "y": -0.3609
+        }
+      },
+      "role": "Inscribed in Circ.A at 45\u00b0"
+    },
+    "Square.D": {
+      "type": "square",
+      "name": "Square.D",
+      "vertices": {
+        "V1": {
+          "x": 1.220353,
+          "y": 1.739353
+        },
+        "V2": {
+          "x": -0.519553,
+          "y": 1.739353
+        },
+        "V3": {
+          "x": -0.519553,
+          "y": -0.000553
+        },
+        "V4": {
+          "x": 1.220353,
+          "y": -0.000553
+        }
+      },
+      "role": "Inscribed in Circ.Bounds.A at 45\u00b0 (Green IS)"
+    },
+    "Rect.1": {
+      "type": "rectangle",
+      "name": "Rect.1",
+      "vertices": {
+        "UL": {
+          "x": -1.389507,
+          "y": 2.609307
+        },
+        "UR": {
+          "x": -0.370293,
+          "y": 2.609307
+        },
+        "LL": {
+          "x": -1.389507,
+          "y": -3.418542
+        },
+        "LR": {
+          "x": -0.370293,
+          "y": -3.418542
+        }
+      },
+      "width": 1.019214,
+      "role": "Stem rectangle. Width = 2\u00d7R_VERTEX."
+    },
+    "Circ.Rect.I": {
+      "type": "circle",
+      "name": "Circ.Rect.I",
+      "center": {
+        "x": -0.8799,
+        "y": -2.908935
+      },
+      "radius": 0.509607,
+      "role": "Inscribed circle in Rect.1 at bottom (nib circle)."
+    },
+    "Circ.Rect.V": {
+      "type": "circle",
+      "name": "Circ.Rect.V",
+      "center": {
+        "x": -0.8799,
+        "y": -3.928149
+      },
+      "radius": 0.509607,
+      "role": "External vertex circle at Rect.1 bottom."
+    }
+  },
+  "points": {
+    "P.GRID.sqB_left.sqB_top": {
+      "x": -1.389507,
+      "y": 2.609307,
+      "description": "Grid: Square.B left \u00d7 Square.B top / Gold TAN top",
+      "tags": [
+        "grid",
+        "sqB_left",
+        "sqB_top"
+      ]
+    },
+    "P.GRID.sqB_left.green_tan_top": {
+      "x": -1.389507,
+      "y": 2.0997,
+      "description": "Grid: Square.B left \u00d7 Green tangent top",
+      "tags": [
+        "grid",
+        "sqB_left",
+        "green_tan_top"
+      ]
+    },
+    "P.GRID.sqB_left.blue_tan_top": {
+      "x": -1.389507,
+      "y": 1.739353,
+      "description": "Grid: Square.B left \u00d7 Blue tangent top",
+      "tags": [
+        "grid",
+        "sqB_left",
+        "blue_tan_top"
+      ]
+    },
+    "P.GRID.sqB_left.center_y": {
+      "x": -1.389507,
+      "y": 0.8694,
+      "description": "Grid: Square.B left \u00d7 Center y",
+      "tags": [
+        "grid",
+        "sqB_left",
+        "center_y"
+      ]
+    },
+    "P.GRID.sqB_left.blue_tan_bot": {
+      "x": -1.389507,
+      "y": -0.000553,
+      "description": "Grid: Square.B left \u00d7 Blue tangent bottom",
+      "tags": [
+        "grid",
+        "sqB_left",
+        "blue_tan_bot"
+      ]
+    },
+    "P.GRID.sqB_left.green_tan_bot": {
+      "x": -1.389507,
+      "y": -0.3609,
+      "description": "Grid: Square.B left \u00d7 Green tangent bottom",
+      "tags": [
+        "grid",
+        "sqB_left",
+        "green_tan_bot"
+      ]
+    },
+    "P.GRID.sqB_left.sqB_bot": {
+      "x": -1.389507,
+      "y": -0.870507,
+      "description": "Grid: Square.B left \u00d7 Square.B bottom / Gold TAN bottom",
+      "tags": [
+        "grid",
+        "sqB_left",
+        "sqB_bot"
+      ]
+    },
+    "P.GRID.sqB_left.waist_y": {
+      "x": -1.389507,
+      "y": -2.399328,
+      "description": "Grid: Square.B left \u00d7 Circ.Rect.I top / nib waist",
+      "tags": [
+        "grid",
+        "sqB_left",
+        "waist_y"
+      ]
+    },
+    "P.GRID.sqA_v2_x.sqB_top": {
+      "x": -0.8799,
+      "y": 2.609307,
+      "description": "Grid: Square.A V2/V3 x \u00d7 Square.B top / Gold TAN top",
+      "tags": [
+        "grid",
+        "sqA_v2_x",
+        "sqB_top"
+      ]
+    },
+    "P.GRID.sqA_v2_x.green_tan_top": {
+      "x": -0.8799,
+      "y": 2.0997,
+      "description": "Grid: Square.A V2/V3 x \u00d7 Green tangent top",
+      "tags": [
+        "grid",
+        "sqA_v2_x",
+        "green_tan_top"
+      ]
+    },
+    "P.GRID.sqA_v2_x.blue_tan_top": {
+      "x": -0.8799,
+      "y": 1.739353,
+      "description": "Grid: Square.A V2/V3 x \u00d7 Blue tangent top",
+      "tags": [
+        "grid",
+        "sqA_v2_x",
+        "blue_tan_top"
+      ]
+    },
+    "P.GRID.sqA_v2_x.center_y": {
+      "x": -0.8799,
+      "y": 0.8694,
+      "description": "Grid: Square.A V2/V3 x \u00d7 Center y",
+      "tags": [
+        "grid",
+        "sqA_v2_x",
+        "center_y"
+      ]
+    },
+    "P.GRID.sqA_v2_x.blue_tan_bot": {
+      "x": -0.8799,
+      "y": -0.000553,
+      "description": "Grid: Square.A V2/V3 x \u00d7 Blue tangent bottom",
+      "tags": [
+        "grid",
+        "sqA_v2_x",
+        "blue_tan_bot"
+      ]
+    },
+    "P.GRID.sqA_v2_x.green_tan_bot": {
+      "x": -0.8799,
+      "y": -0.3609,
+      "description": "Grid: Square.A V2/V3 x \u00d7 Green tangent bottom",
+      "tags": [
+        "grid",
+        "sqA_v2_x",
+        "green_tan_bot"
+      ]
+    },
+    "P.GRID.sqA_v2_x.sqB_bot": {
+      "x": -0.8799,
+      "y": -0.870507,
+      "description": "Grid: Square.A V2/V3 x \u00d7 Square.B bottom / Gold TAN bottom",
+      "tags": [
+        "grid",
+        "sqA_v2_x",
+        "sqB_bot"
+      ]
+    },
+    "P.GRID.sqA_v2_x.waist_y": {
+      "x": -0.8799,
+      "y": -2.399328,
+      "description": "Grid: Square.A V2/V3 x \u00d7 Circ.Rect.I top / nib waist",
+      "tags": [
+        "grid",
+        "sqA_v2_x",
+        "waist_y"
+      ]
+    },
+    "P.GRID.rect_right.sqB_top": {
+      "x": -0.370293,
+      "y": 2.609307,
+      "description": "Grid: Rect.1 right \u00d7 Square.B top / Gold TAN top",
+      "tags": [
+        "grid",
+        "rect_right",
+        "sqB_top"
+      ]
+    },
+    "P.GRID.rect_right.green_tan_top": {
+      "x": -0.370293,
+      "y": 2.0997,
+      "description": "Grid: Rect.1 right \u00d7 Green tangent top",
+      "tags": [
+        "grid",
+        "rect_right",
+        "green_tan_top"
+      ]
+    },
+    "P.GRID.rect_right.blue_tan_top": {
+      "x": -0.370293,
+      "y": 1.739353,
+      "description": "Grid: Rect.1 right \u00d7 Blue tangent top",
+      "tags": [
+        "grid",
+        "rect_right",
+        "blue_tan_top"
+      ]
+    },
+    "P.GRID.rect_right.center_y": {
+      "x": -0.370293,
+      "y": 0.8694,
+      "description": "Grid: Rect.1 right \u00d7 Center y",
+      "tags": [
+        "grid",
+        "rect_right",
+        "center_y"
+      ]
+    },
+    "P.GRID.rect_right.blue_tan_bot": {
+      "x": -0.370293,
+      "y": -0.000553,
+      "description": "Grid: Rect.1 right \u00d7 Blue tangent bottom",
+      "tags": [
+        "grid",
+        "rect_right",
+        "blue_tan_bot"
+      ]
+    },
+    "P.GRID.rect_right.green_tan_bot": {
+      "x": -0.370293,
+      "y": -0.3609,
+      "description": "Grid: Rect.1 right \u00d7 Green tangent bottom",
+      "tags": [
+        "grid",
+        "rect_right",
+        "green_tan_bot"
+      ]
+    },
+    "P.GRID.rect_right.sqB_bot": {
+      "x": -0.370293,
+      "y": -0.870507,
+      "description": "Grid: Rect.1 right \u00d7 Square.B bottom / Gold TAN bottom",
+      "tags": [
+        "grid",
+        "rect_right",
+        "sqB_bot"
+      ]
+    },
+    "P.GRID.rect_right.waist_y": {
+      "x": -0.370293,
+      "y": -2.399328,
+      "description": "Grid: Rect.1 right \u00d7 Circ.Rect.I top / nib waist",
+      "tags": [
+        "grid",
+        "rect_right",
+        "waist_y"
+      ]
+    },
+    "P.GRID.center_x.sqB_top": {
+      "x": 0.3504,
+      "y": 2.609307,
+      "description": "Grid: Center x \u00d7 Square.B top / Gold TAN top",
+      "tags": [
+        "grid",
+        "center_x",
+        "sqB_top"
+      ]
+    },
+    "P.GRID.center_x.green_tan_top": {
+      "x": 0.3504,
+      "y": 2.0997,
+      "description": "Grid: Center x \u00d7 Green tangent top",
+      "tags": [
+        "grid",
+        "center_x",
+        "green_tan_top"
+      ]
+    },
+    "P.GRID.center_x.blue_tan_top": {
+      "x": 0.3504,
+      "y": 1.739353,
+      "description": "Grid: Center x \u00d7 Blue tangent top",
+      "tags": [
+        "grid",
+        "center_x",
+        "blue_tan_top"
+      ]
+    },
+    "P.GRID.center_x.center_y": {
+      "x": 0.3504,
+      "y": 0.8694,
+      "description": "Grid: Center x \u00d7 Center y",
+      "tags": [
+        "grid",
+        "center_x",
+        "center_y"
+      ]
+    },
+    "P.GRID.center_x.blue_tan_bot": {
+      "x": 0.3504,
+      "y": -0.000553,
+      "description": "Grid: Center x \u00d7 Blue tangent bottom",
+      "tags": [
+        "grid",
+        "center_x",
+        "blue_tan_bot"
+      ]
+    },
+    "P.GRID.center_x.green_tan_bot": {
+      "x": 0.3504,
+      "y": -0.3609,
+      "description": "Grid: Center x \u00d7 Green tangent bottom",
+      "tags": [
+        "grid",
+        "center_x",
+        "green_tan_bot"
+      ]
+    },
+    "P.GRID.center_x.sqB_bot": {
+      "x": 0.3504,
+      "y": -0.870507,
+      "description": "Grid: Center x \u00d7 Square.B bottom / Gold TAN bottom",
+      "tags": [
+        "grid",
+        "center_x",
+        "sqB_bot"
+      ]
+    },
+    "P.GRID.center_x.waist_y": {
+      "x": 0.3504,
+      "y": -2.399328,
+      "description": "Grid: Center x \u00d7 Circ.Rect.I top / nib waist",
+      "tags": [
+        "grid",
+        "center_x",
+        "waist_y"
+      ]
+    },
+    "P.GRID.sqB_right.sqB_top": {
+      "x": 2.090307,
+      "y": 2.609307,
+      "description": "Grid: Square.B right \u00d7 Square.B top / Gold TAN top",
+      "tags": [
+        "grid",
+        "sqB_right",
+        "sqB_top"
+      ]
+    },
+    "P.GRID.sqB_right.green_tan_top": {
+      "x": 2.090307,
+      "y": 2.0997,
+      "description": "Grid: Square.B right \u00d7 Green tangent top",
+      "tags": [
+        "grid",
+        "sqB_right",
+        "green_tan_top"
+      ]
+    },
+    "P.GRID.sqB_right.blue_tan_top": {
+      "x": 2.090307,
+      "y": 1.739353,
+      "description": "Grid: Square.B right \u00d7 Blue tangent top",
+      "tags": [
+        "grid",
+        "sqB_right",
+        "blue_tan_top"
+      ]
+    },
+    "P.GRID.sqB_right.center_y": {
+      "x": 2.090307,
+      "y": 0.8694,
+      "description": "Grid: Square.B right \u00d7 Center y",
+      "tags": [
+        "grid",
+        "sqB_right",
+        "center_y"
+      ]
+    },
+    "P.GRID.sqB_right.blue_tan_bot": {
+      "x": 2.090307,
+      "y": -0.000553,
+      "description": "Grid: Square.B right \u00d7 Blue tangent bottom",
+      "tags": [
+        "grid",
+        "sqB_right",
+        "blue_tan_bot"
+      ]
+    },
+    "P.GRID.sqB_right.green_tan_bot": {
+      "x": 2.090307,
+      "y": -0.3609,
+      "description": "Grid: Square.B right \u00d7 Green tangent bottom",
+      "tags": [
+        "grid",
+        "sqB_right",
+        "green_tan_bot"
+      ]
+    },
+    "P.GRID.sqB_right.sqB_bot": {
+      "x": 2.090307,
+      "y": -0.870507,
+      "description": "Grid: Square.B right \u00d7 Square.B bottom / Gold TAN bottom",
+      "tags": [
+        "grid",
+        "sqB_right",
+        "sqB_bot"
+      ]
+    },
+    "P.GRID.sqB_right.waist_y": {
+      "x": 2.090307,
+      "y": -2.399328,
+      "description": "Grid: Square.B right \u00d7 Circ.Rect.I top / nib waist",
+      "tags": [
+        "grid",
+        "sqB_right",
+        "waist_y"
+      ]
+    },
+    "P.CA.TAN.TOP": {
+      "x": 0.3504,
+      "y": 2.609307,
+      "description": "Circ.A tangent top",
+      "tags": [
+        "tangent",
+        "circ_A",
+        "top"
+      ]
+    },
+    "P.CA.TAN.BOTTOM": {
+      "x": 0.3504,
+      "y": -0.870507,
+      "description": "Circ.A tangent bottom",
+      "tags": [
+        "tangent",
+        "circ_A",
+        "bottom"
+      ]
+    },
+    "P.CA.TAN.RIGHT": {
+      "x": 2.090307,
+      "y": 0.8694,
+      "description": "Circ.A tangent right",
+      "tags": [
+        "tangent",
+        "circ_A",
+        "right"
+      ]
+    },
+    "P.CA.TAN.LEFT": {
+      "x": -1.389507,
+      "y": 0.8694,
+      "description": "Circ.A tangent left",
+      "tags": [
+        "tangent",
+        "circ_A",
+        "left"
+      ]
+    },
+    "P.CBA.TAN.TOP": {
+      "x": 0.3504,
+      "y": 2.0997,
+      "description": "Circ.Bounds.A tangent top",
+      "tags": [
+        "tangent",
+        "circ_Bounds.A",
+        "top"
+      ]
+    },
+    "P.CBA.TAN.BOTTOM": {
+      "x": 0.3504,
+      "y": -0.3609,
+      "description": "Circ.Bounds.A tangent bottom",
+      "tags": [
+        "tangent",
+        "circ_Bounds.A",
+        "bottom"
+      ]
+    },
+    "P.CBA.TAN.RIGHT": {
+      "x": 1.5807,
+      "y": 0.8694,
+      "description": "Circ.Bounds.A tangent right",
+      "tags": [
+        "tangent",
+        "circ_Bounds.A",
+        "right"
+      ]
+    },
+    "P.CBA.TAN.LEFT": {
+      "x": -0.8799,
+      "y": 0.8694,
+      "description": "Circ.Bounds.A tangent left",
+      "tags": [
+        "tangent",
+        "circ_Bounds.A",
+        "left"
+      ]
+    },
+    "P.CD.TAN.TOP": {
+      "x": 0.3504,
+      "y": 1.739353,
+      "description": "Circ.D tangent top",
+      "tags": [
+        "tangent",
+        "circ_D",
+        "top"
+      ]
+    },
+    "P.CD.TAN.BOTTOM": {
+      "x": 0.3504,
+      "y": -0.000553,
+      "description": "Circ.D tangent bottom",
+      "tags": [
+        "tangent",
+        "circ_D",
+        "bottom"
+      ]
+    },
+    "P.CD.TAN.RIGHT": {
+      "x": 1.220353,
+      "y": 0.8694,
+      "description": "Circ.D tangent right",
+      "tags": [
+        "tangent",
+        "circ_D",
+        "right"
+      ]
+    },
+    "P.CD.TAN.LEFT": {
+      "x": -0.519553,
+      "y": 0.8694,
+      "description": "Circ.D tangent left",
+      "tags": [
+        "tangent",
+        "circ_D",
+        "left"
+      ]
+    },
+    "P.SQA.V1": {
+      "x": 1.5807,
+      "y": 2.0997,
+      "description": "Circ.A IS vertex V1 (45\u00b0)",
+      "tags": [
+        "vertex",
+        "is_A",
+        "angle_45"
+      ]
+    },
+    "P.SQA.V2": {
+      "x": -0.8799,
+      "y": 2.0997,
+      "description": "Circ.A IS vertex V2 (135\u00b0)",
+      "tags": [
+        "vertex",
+        "is_A",
+        "angle_135"
+      ]
+    },
+    "P.SQA.V3": {
+      "x": -0.8799,
+      "y": -0.3609,
+      "description": "Circ.A IS vertex V3 (225\u00b0)",
+      "tags": [
+        "vertex",
+        "is_A",
+        "angle_225"
+      ]
+    },
+    "P.SQA.V4": {
+      "x": 1.5807,
+      "y": -0.3609,
+      "description": "Circ.A IS vertex V4 (315\u00b0)",
+      "tags": [
+        "vertex",
+        "is_A",
+        "angle_315"
+      ]
+    },
+    "P.SQD.V1": {
+      "x": 1.220353,
+      "y": 1.739353,
+      "description": "Circ.Bounds.A IS vertex V1 (45\u00b0)",
+      "tags": [
+        "vertex",
+        "is_Bounds.A",
+        "angle_45"
+      ]
+    },
+    "P.SQD.V2": {
+      "x": -0.519553,
+      "y": 1.739353,
+      "description": "Circ.Bounds.A IS vertex V2 (135\u00b0)",
+      "tags": [
+        "vertex",
+        "is_Bounds.A",
+        "angle_135"
+      ]
+    },
+    "P.SQD.V3": {
+      "x": -0.519553,
+      "y": -0.000553,
+      "description": "Circ.Bounds.A IS vertex V3 (225\u00b0)",
+      "tags": [
+        "vertex",
+        "is_Bounds.A",
+        "angle_225"
+      ]
+    },
+    "P.SQD.V4": {
+      "x": 1.220353,
+      "y": -0.000553,
+      "description": "Circ.Bounds.A IS vertex V4 (315\u00b0)",
+      "tags": [
+        "vertex",
+        "is_Bounds.A",
+        "angle_315"
+      ]
+    },
+    "P.SQD_inner.V1": {
+      "x": 0.96555,
+      "y": 1.48455,
+      "description": "Circ.D IS vertex V1 (45\u00b0)",
+      "tags": [
+        "vertex",
+        "is_D",
+        "angle_45"
+      ]
+    },
+    "P.SQD_inner.V2": {
+      "x": -0.26475,
+      "y": 1.48455,
+      "description": "Circ.D IS vertex V2 (135\u00b0)",
+      "tags": [
+        "vertex",
+        "is_D",
+        "angle_135"
+      ]
+    },
+    "P.SQD_inner.V3": {
+      "x": -0.26475,
+      "y": 0.25425,
+      "description": "Circ.D IS vertex V3 (225\u00b0)",
+      "tags": [
+        "vertex",
+        "is_D",
+        "angle_225"
+      ]
+    },
+    "P.SQD_inner.V4": {
+      "x": 0.96555,
+      "y": 0.25425,
+      "description": "Circ.D IS vertex V4 (315\u00b0)",
+      "tags": [
+        "vertex",
+        "is_D",
+        "angle_315"
+      ]
+    },
+    "P.SQB.UL": {
+      "x": -1.389507,
+      "y": 2.609307,
+      "description": "Square.B upper-left",
+      "tags": [
+        "corner",
+        "sq_B"
+      ]
+    },
+    "P.SQB.UR": {
+      "x": 2.090307,
+      "y": 2.609307,
+      "description": "Square.B upper-right",
+      "tags": [
+        "corner",
+        "sq_B"
+      ]
+    },
+    "P.SQB.LL": {
+      "x": -1.389507,
+      "y": -0.870507,
+      "description": "Square.B lower-left",
+      "tags": [
+        "corner",
+        "sq_B"
+      ]
+    },
+    "P.SQB.LR": {
+      "x": 2.090307,
+      "y": -0.870507,
+      "description": "Square.B lower-right",
+      "tags": [
+        "corner",
+        "sq_B"
+      ]
+    },
+    "P.CENTER": {
+      "x": 0.3504,
+      "y": 0.8694,
+      "description": "Shared center of all circles",
+      "tags": [
+        "center"
+      ]
+    },
+    "P.NIB.RECT_I.TOP": {
+      "x": -0.8799,
+      "y": -2.399328,
+      "description": "Circ.Rect.I top (nib shoulder)",
+      "tags": [
+        "nib",
+        "circ_rect_i"
+      ]
+    },
+    "P.NIB.RECT_I.CENTER": {
+      "x": -0.8799,
+      "y": -2.908935,
+      "description": "Circ.Rect.I center (nib waist)",
+      "tags": [
+        "nib",
+        "circ_rect_i"
+      ]
+    },
+    "P.NIB.RECT_V.CENTER": {
+      "x": -0.8799,
+      "y": -3.928149,
+      "description": "Circ.Rect.V center (nib tip)",
+      "tags": [
+        "nib",
+        "circ_rect_v"
+      ]
+    },
+    "P.NIB.WAIST.LEFT": {
+      "x": -1.389507,
+      "y": -2.399328,
+      "description": "Grid: sqB_left \u00d7 waist_y (Rect.1 left at nib waist)",
+      "tags": [
+        "nib",
+        "grid",
+        "waist"
+      ]
+    },
+    "P.NIB.WAIST.RIGHT": {
+      "x": -0.370293,
+      "y": -2.399328,
+      "description": "Grid: rect_right \u00d7 waist_y (Rect.1 right at nib waist)",
+      "tags": [
+        "nib",
+        "grid",
+        "waist"
+      ]
+    },
+    "P.NIB.BUMP.HUB": {
+      "x": -0.8799,
+      "y": -1.634917,
+      "description": "Bump center hub (midpoint SqB.bottom \u2194 waist_y)",
+      "tags": [
+        "nib",
+        "hub",
+        "bump"
+      ]
+    },
+    "P.GOLD.ARC.TOP": {
+      "x": 0.758345,
+      "y": 2.560807,
+      "description": "Gold arc top endpoint (~76.4\u00b0 on Circ.A)",
+      "tags": [
+        "arc_endpoint",
+        "circ_A"
+      ]
+    }
+  },
+  "intersections": []
+}

@@ -1,0 +1,625 @@
+{
+  "_meta": {
+    "step": 1,
+    "name": "graph",
+    "description": "Wireframe P \u2014 25 nodes, 44 edges. All positions from Plane A \u2192 Plane B projection.",
+    "version": "3.0"
+  },
+  "nodes": [
+    {
+      "index": 0,
+      "x": -1.389507,
+      "y": 2.609307,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 3
+    },
+    {
+      "index": 1,
+      "x": 0.3504,
+      "y": 2.609307,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 1
+    },
+    {
+      "index": 2,
+      "x": 1.220353,
+      "y": 1.739353,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 4
+    },
+    {
+      "index": 3,
+      "x": 0.3504,
+      "y": -0.000553,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 3
+    },
+    {
+      "index": 4,
+      "x": -0.8799,
+      "y": 2.0997,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 4
+    },
+    {
+      "index": 5,
+      "x": 0.3504,
+      "y": 1.739353,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 2
+    },
+    {
+      "index": 6,
+      "x": 1.220353,
+      "y": 0.8694,
+      "color": "blue_glow",
+      "radius": 0.09,
+      "degree": 3
+    },
+    {
+      "index": 7,
+      "x": -1.389507,
+      "y": -0.000553,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 5
+    },
+    {
+      "index": 8,
+      "x": -0.370293,
+      "y": -0.000553,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 4
+    },
+    {
+      "index": 9,
+      "x": -0.8799,
+      "y": -0.3609,
+      "color": "amber",
+      "radius": 0.14,
+      "degree": 6
+    },
+    {
+      "index": 10,
+      "x": -0.370293,
+      "y": -0.870507,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 5
+    },
+    {
+      "index": 11,
+      "x": -1.389507,
+      "y": -0.870507,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 5
+    },
+    {
+      "index": 12,
+      "x": -0.8799,
+      "y": -2.399328,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 4
+    },
+    {
+      "index": 13,
+      "x": -0.8799,
+      "y": -2.908935,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 2
+    },
+    {
+      "index": 14,
+      "x": -0.8799,
+      "y": -3.928149,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 1
+    },
+    {
+      "index": 15,
+      "x": -0.370293,
+      "y": 1.739353,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 4
+    },
+    {
+      "index": 16,
+      "x": -0.370293,
+      "y": -0.870507,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 2
+    },
+    {
+      "index": 17,
+      "x": 0.3504,
+      "y": -0.870507,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 3
+    },
+    {
+      "index": 18,
+      "x": 0.3504,
+      "y": -0.3609,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 3
+    },
+    {
+      "index": 19,
+      "x": 0.3504,
+      "y": 2.0997,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 1
+    },
+    {
+      "index": 20,
+      "x": 2.090307,
+      "y": 0.8694,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 3
+    },
+    {
+      "index": 21,
+      "x": 1.220353,
+      "y": -0.000553,
+      "color": "amber",
+      "radius": 0.09,
+      "degree": 5
+    },
+    {
+      "index": 22,
+      "x": -1.389507,
+      "y": -2.399328,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 5
+    },
+    {
+      "index": 23,
+      "x": -0.370293,
+      "y": -2.399328,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 5
+    },
+    {
+      "index": 24,
+      "x": -0.8799,
+      "y": -1.634917,
+      "color": "copper",
+      "radius": 0.09,
+      "degree": 5
+    }
+  ],
+  "edges": [
+    {
+      "a": 0,
+      "b": 1,
+      "color": "copper",
+      "type": "contour"
+    },
+    {
+      "a": 0,
+      "b": 7,
+      "color": "copper",
+      "type": "contour"
+    },
+    {
+      "a": 7,
+      "b": 11,
+      "color": "copper",
+      "type": "contour"
+    },
+    {
+      "a": 7,
+      "b": 8,
+      "color": "copper",
+      "type": "contour"
+    },
+    {
+      "a": 3,
+      "b": 8,
+      "color": "copper",
+      "type": "contour"
+    },
+    {
+      "a": 10,
+      "b": 16,
+      "color": "copper",
+      "type": "contour"
+    },
+    {
+      "a": 7,
+      "b": 9,
+      "color": "copper",
+      "type": "struct"
+    },
+    {
+      "a": 8,
+      "b": 9,
+      "color": "copper",
+      "type": "struct"
+    },
+    {
+      "a": 9,
+      "b": 10,
+      "color": "copper",
+      "type": "struct"
+    },
+    {
+      "a": 9,
+      "b": 11,
+      "color": "copper",
+      "type": "struct"
+    },
+    {
+      "a": 11,
+      "b": 22,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 10,
+      "b": 23,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 22,
+      "b": 23,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 10,
+      "b": 22,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 11,
+      "b": 23,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 10,
+      "b": 24,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 11,
+      "b": 24,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 22,
+      "b": 24,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 23,
+      "b": 24,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 12,
+      "b": 24,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 12,
+      "b": 22,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 12,
+      "b": 23,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 12,
+      "b": 13,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 13,
+      "b": 14,
+      "color": "copper",
+      "type": "nib"
+    },
+    {
+      "a": 4,
+      "b": 9,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 4,
+      "b": 19,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 0,
+      "b": 4,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 4,
+      "b": 15,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 5,
+      "b": 15,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 7,
+      "b": 15,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 8,
+      "b": 15,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 2,
+      "b": 5,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 2,
+      "b": 6,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 2,
+      "b": 20,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 9,
+      "b": 18,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 16,
+      "b": 17,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 20,
+      "b": 21,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 17,
+      "b": 21,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 6,
+      "b": 20,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 6,
+      "b": 21,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 3,
+      "b": 18,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 17,
+      "b": 18,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 2,
+      "b": 21,
+      "color": "copper",
+      "type": "mesh"
+    },
+    {
+      "a": 3,
+      "b": 21,
+      "color": "copper",
+      "type": "mesh"
+    }
+  ],
+  "adjacency": {
+    "0": [
+      1,
+      4,
+      7
+    ],
+    "1": [
+      0
+    ],
+    "2": [
+      5,
+      6,
+      20,
+      21
+    ],
+    "3": [
+      8,
+      18,
+      21
+    ],
+    "4": [
+      0,
+      9,
+      15,
+      19
+    ],
+    "5": [
+      2,
+      15
+    ],
+    "6": [
+      2,
+      20,
+      21
+    ],
+    "7": [
+      0,
+      8,
+      9,
+      11,
+      15
+    ],
+    "8": [
+      3,
+      7,
+      9,
+      15
+    ],
+    "9": [
+      4,
+      7,
+      8,
+      10,
+      11,
+      18
+    ],
+    "10": [
+      9,
+      16,
+      22,
+      23,
+      24
+    ],
+    "11": [
+      7,
+      9,
+      22,
+      23,
+      24
+    ],
+    "12": [
+      13,
+      22,
+      23,
+      24
+    ],
+    "13": [
+      12,
+      14
+    ],
+    "14": [
+      13
+    ],
+    "15": [
+      4,
+      5,
+      7,
+      8
+    ],
+    "16": [
+      10,
+      17
+    ],
+    "17": [
+      16,
+      18,
+      21
+    ],
+    "18": [
+      3,
+      9,
+      17
+    ],
+    "19": [
+      4
+    ],
+    "20": [
+      2,
+      6,
+      21
+    ],
+    "21": [
+      2,
+      3,
+      6,
+      17,
+      20
+    ],
+    "22": [
+      10,
+      11,
+      12,
+      23,
+      24
+    ],
+    "23": [
+      10,
+      11,
+      12,
+      22,
+      24
+    ],
+    "24": [
+      10,
+      11,
+      12,
+      22,
+      23
+    ]
+  },
+  "edge_thickness": 0.04,
+  "edge_opacity": 0.4,
+  "stats": {
+    "node_count": 25,
+    "edge_count": 44,
+    "avg_degree": 3.52,
+    "max_degree": 6,
+    "junction_index": 9
+  }
+}

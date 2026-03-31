@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated P Logo — The Crafted Logic</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #0e0820;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #container {
+    position: relative;
+    width: 100vmin;
+    height: 100vmin;
+    max-width: 700px;
+    max-height: 700px;
+    overflow: hidden;
+  }
+  canvas {
+    display: block;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  #bg-canvas { z-index: 0; }
+  #main-canvas { z-index: 1; }
+  #bloom-canvas { z-index: 2; pointer-events: none; mix-blend-mode: screen; opacity: 0.5; }
+  #logo-overlay {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 100%; height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    z-index: 10;
+    opacity: 0;
+    clip-path: circle(46.5% at 50% 50%);
+    animation: fadeInOut 6s ease-in-out infinite;
+  }
+  @keyframes fadeInOut {
+    0%   { opacity: 0; }
+    35%  { opacity: 1; }
+    50%  { opacity: 1; }
+    85%  { opacity: 0; }
+    100% { opacity: 0; }
+  }
+</style>
+</head>
+<body>
+<div id="container">
+  <canvas id="bg-canvas"></canvas>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(function() {
+  const LOGO_SRC = null;
+  if (LOGO_SRC) {
+    const img = document.createElement('img');
+    img.id = 'logo-overlay';
+    img.src = LOGO_SRC;
+    document.getElementById('container').prepend(img);
+  }
+
+  const container = document.getElementById('container');
+  const W = 700, H = 700;
+
+  // ═══════════════════════════════════════════════════════
+  // P SCALE — uniform scale for glyph group within circle
+  // Geometry spans ~6.7u tall (y: -3.12 to 2.61).
+  // Circle inner ∅ = 9.1u. Target ~85% fill → 1.17×
+  // ═══════════════════════════════════════════════════════
+  const P_SCALE = 1.28;
+  const P_OFFSET_Y = 0.255;  // center the glyph vertically (nib extends further down than top)
+
+  // ═══════════════════════════════════════════════════════
+  // COLOR PALETTE: "The Crafted Logic"
+  // ═══════════════════════════════════════════════════════
+  const PAL = {
+    bgDeep:    '#0e0820',
+    bgCircle:  0x150d2e,
+    roseGold:  0xc4876e,
+    roseGoldHi:0xd9a48e,
+    patCopper: 0x5a9e8c,
+    bronze:    0xb87a4e,
+    amber:     0xe8a84c,
+    blueGlow:  0x5b8fd4,
+    warmWhite: 0xffecd2,
+  };
+
+  // ═══════════════════════════════════════════════════════
+  // BACKGROUND — indigo-violet nebula
+  // ═══════════════════════════════════════════════════════
+  const bgCanvas = document.getElementById('bg-canvas');
+  const bgCtx = bgCanvas.getContext('2d');
+  bgCanvas.width = bgCanvas.height = W;
+
+  function drawNebulaBackground(t) {
+    bgCtx.globalCompositeOperation = 'source-over';
+    bgCtx.fillStyle = PAL.bgDeep;
+    bgCtx.fillRect(0, 0, W, H);
+    bgCtx.globalCompositeOperation = 'lighter';
+    const cx = W / 2, cy = H / 2;
+    const clouds = [
+      { color: 'rgba(80,40,140,',  r: 250, ox: 0.06, oy: 0.10, baseOp: 0.045 },
+      { color: 'rgba(90,158,140,', r: 180, ox: -0.08, oy: 0.05, baseOp: 0.02 },
+      { color: 'rgba(184,122,78,', r: 160, ox: 0.05, oy: -0.07, baseOp: 0.025 },
+      { color: 'rgba(196,135,110,',r: 200, ox: -0.04, oy: -0.06, baseOp: 0.015 },
+      { color: 'rgba(40,20,80,',   r: 300, ox: 0.03, oy: 0.04, baseOp: 0.04 },
+    ];
+    clouds.forEach(c => {
+      const x = cx + Math.sin(t * c.ox) * 120 + Math.cos(t * c.oy * 1.3) * 60;
+      const y = cy + Math.cos(t * c.oy) * 100 + Math.sin(t * c.ox * 0.7) * 80;
+      const op = c.baseOp + 0.008 * Math.sin(t * 0.3);
+      const grad = bgCtx.createRadialGradient(x, y, 0, x, y, c.r);
+      grad.addColorStop(0, c.color + op + ')');
+      grad.addColorStop(0.6, c.color + (op * 0.4) + ')');
+      grad.addColorStop(1, c.color + '0)');
+      bgCtx.fillStyle = grad;
+      bgCtx.fillRect(0, 0, W, H);
+    });
+    bgCtx.globalCompositeOperation = 'source-over';
+    const vig = bgCtx.createRadialGradient(cx, cy, W * 0.25, cx, cy, W * 0.55);
+    vig.addColorStop(0, 'rgba(14,8,32,0)');
+    vig.addColorStop(1, 'rgba(14,8,32,0.75)');
+    bgCtx.fillStyle = vig;
+    bgCtx.fillRect(0, 0, W, H);
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // THREE.JS SETUP
+  // ═══════════════════════════════════════════════════════
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(W, H);
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.domElement.id = 'main-canvas';
+  container.appendChild(renderer.domElement);
+
+  const bloomRenderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
+  bloomRenderer.setSize(W / 2, H / 2);
+  bloomRenderer.setPixelRatio(1);
+  bloomRenderer.domElement.id = 'bloom-canvas';
+  bloomRenderer.domElement.style.width = W + 'px';
+  bloomRenderer.domElement.style.height = H + 'px';
+  container.appendChild(bloomRenderer.domElement);
+
+  const scene = new THREE.Scene();
+  const bloomScene = new THREE.Scene();
+  const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, 0.1, 100);
+  camera.position.set(0, 0, 10);
+  camera.lookAt(0, 0, 0);
+
+  const COPPER    = new THREE.Color(PAL.patCopper);
+  const AMBER     = new THREE.Color(PAL.amber);
+  const BRONZE    = new THREE.Color(PAL.bronze);
+  const ROSEGOLD  = new THREE.Color(PAL.roseGold);
+  const ROSEGOLHI = new THREE.Color(PAL.roseGoldHi);
+  const BLUEGLOW  = new THREE.Color(PAL.blueGlow);
+  const WARMWHT   = new THREE.Color(PAL.warmWhite);
+  const DEEP      = new THREE.Color(PAL.bgCircle);
+  const WHITE     = new THREE.Color(0xffecd2);
+
+  // ─── Ring + Background (scene-level) ───
+  const ringMat = new THREE.MeshBasicMaterial({ color: ROSEGOLD, side: THREE.DoubleSide, transparent: true, opacity: 0.92 });
+  scene.add(new THREE.Mesh(new THREE.RingGeometry(4.55, 4.72, 128), ringMat));
+  scene.add(new THREE.Mesh(
+    new THREE.RingGeometry(4.48, 4.55, 128),
+    new THREE.MeshBasicMaterial({ color: ROSEGOLD, side: THREE.DoubleSide, transparent: true, opacity: 0.18 })
+  ));
+  bloomScene.add(new THREE.Mesh(
+    new THREE.RingGeometry(4.38, 4.82, 128),
+    new THREE.MeshBasicMaterial({ color: ROSEGOLHI, side: THREE.DoubleSide, transparent: true, opacity: 0.4 })
+  ));
+  scene.add(new THREE.Mesh(
+    new THREE.CircleGeometry(4.55, 128),
+    new THREE.MeshBasicMaterial({ color: DEEP, side: THREE.DoubleSide })
+  ));
+
+  // ═══════════════════════════════════════════════════════
+  // P GROUP
+  // ═══════════════════════════════════════════════════════
+  const pGroup = new THREE.Group();
+  pGroup.scale.set(P_SCALE, P_SCALE, 1);
+  pGroup.position.y = P_OFFSET_Y * P_SCALE;
+  scene.add(pGroup);
+
+  const bloomPGroup = new THREE.Group();
+  bloomPGroup.scale.set(P_SCALE, P_SCALE, 1);
+  bloomPGroup.position.y = P_OFFSET_Y * P_SCALE;
+  bloomScene.add(bloomPGroup);
+
+  // ═══════════════════════════════════════════════════════
+  // GEOMETRY — generated from p_logo schema
+  // ═══════════════════════════════════════════════════════
+  const _wireNodesRaw = /* __WIRE_NODES__ */[];
+  const COLOR_MAP = { COPPER, AMBER, BRONZE, BLUEGLOW, WARMWHT };
+  const wireNodes = _wireNodesRaw.map(n => ({ ...n, col: COLOR_MAP[n.col] }));
+
+  // ─── Edges (generated from schema) ───
+  const wireEdges = /* __WIRE_EDGES__ */[];
+
+  const edgeSet = new Set();
+  const uniqueEdges = [];
+  wireEdges.forEach(([a, b]) => {
+    const key = Math.min(a, b) + ',' + Math.max(a, b);
+    if (!edgeSet.has(key)) { edgeSet.add(key); uniqueEdges.push([a, b]); }
+  });
+
+  const adjacency = wireNodes.map(() => []);
+  uniqueEdges.forEach(([a, b], i) => {
+    adjacency[a].push({ node: b, edge: i });
+    adjacency[b].push({ node: a, edge: i });
+  });
+
+  // ─── Glow Textures ───
+  function createGlowTexture(softness) {
+    const size = 128, c = document.createElement('canvas');
+    c.width = c.height = size;
+    const ctx = c.getContext('2d');
+    const grad = ctx.createRadialGradient(size/2, size/2, 0, size/2, size/2, size/2);
+    grad.addColorStop(0, 'rgba(255,255,255,1)');
+    grad.addColorStop(0.15, `rgba(255,255,255,${0.7 * softness})`);
+    grad.addColorStop(0.4, `rgba(255,255,255,${0.2 * softness})`);
+    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, size, size);
+    return new THREE.CanvasTexture(c);
+  }
+  const glowTexture = createGlowTexture(1.0);
+  const softGlowTexture = createGlowTexture(0.6);
+
+  // ─── Node degree computation ───
+  const nodeDegree = wireNodes.map(() => 0);
+  uniqueEdges.forEach(([a, b]) => { nodeDegree[a]++; nodeDegree[b]++; });
+
+  // ─── Degree-derived radii: √2-chain ───
+  // r_core(d) = R_VERTEX × 0.035 × (√2)^(d-1)
+  // r_glow(d) = r_core × 5
+  // Deg 1→0.018  Deg 3→0.036  Deg 4→0.050  Deg 6→0.101
+  const R_VERTEX = 1.2303 * (Math.sqrt(2) - 1);  // ≈ 0.5096
+  const BASE_R   = R_VERTEX * 0.035;              // ≈ 0.0178
+
+  // ─── Edges → pGroup ───
+  const edgeMeshes = [];
+  uniqueEdges.forEach(([a, b]) => {
+    const na = wireNodes[a], nb = wireNodes[b];
+    const avgCol = na.col.clone().lerp(nb.col, 0.5);
+    const geom = new THREE.BufferGeometry();
+    geom.setAttribute('position', new THREE.Float32BufferAttribute([na.x, na.y, 0, nb.x, nb.y, 0], 3));
+    const mat = new THREE.LineBasicMaterial({ color: avgCol, transparent: true, opacity: 0.5 });
+    pGroup.add(new THREE.Line(geom, mat));
+    edgeMeshes.push({ a, b, mat, baseColor: avgCol, waveIntensity: 0 });
+  });
+
+  // ─── Nodes → pGroup + bloomPGroup (degree-sized) ───
+  const nodeMeshes = [];
+  wireNodes.forEach((n, i) => {
+    const deg = nodeDegree[i];
+    const coreR = BASE_R * Math.pow(Math.SQRT2, deg - 1);
+    const glowR = coreR * 5;
+    const glowOp = 0.4 + 0.08 * deg;  // 0.48 → 0.88
+
+    const coreMat = new THREE.MeshBasicMaterial({ color: n.col, transparent: true, opacity: 1 });
+    const core = new THREE.Mesh(new THREE.CircleGeometry(coreR, 16), coreMat);
+    core.position.set(n.x, n.y, 0.01);
+    pGroup.add(core);
+
+    const spriteMat = new THREE.SpriteMaterial({ map: glowTexture, color: n.col, transparent: true, opacity: glowOp, blending: THREE.AdditiveBlending });
+    const sprite = new THREE.Sprite(spriteMat);
+    sprite.position.set(n.x, n.y, 0.005);
+    sprite.scale.set(glowR, glowR, 1);
+    pGroup.add(sprite);
+
+    const bloomMat = new THREE.SpriteMaterial({ map: softGlowTexture, color: n.col, transparent: true, opacity: glowOp * 0.5, blending: THREE.AdditiveBlending });
+    const bloomSprite = new THREE.Sprite(bloomMat);
+    bloomSprite.position.set(n.x, n.y, 0.005);
+    bloomSprite.scale.set(glowR * 2, glowR * 2, 1);
+    bloomPGroup.add(bloomSprite);
+
+    nodeMeshes.push({ core, sprite, coreMat, spriteMat, bloomMat, bloomSprite, baseOpacity: glowOp, baseScale: glowR, phase: Math.random() * Math.PI * 2, waveIntensity: 0, idx: i });
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // ARCS — from spec: unified center (0.3504, 0.8694)
+  //   Green (Circ.Bounds.A): r=1.2303, -90° → 90° (π sweep)
+  //   Blue  (Circ.D):        r=0.8700, -90° → 90° (π sweep)
+  //   Gold  (Circ.A):        r=1.7399, -90° → 90° (π sweep)
+  // ═══════════════════════════════════════════════════════
+  const arcDefs = /* __ARC_DEFS__ */[];
+  // Resolve arc color strings to THREE.Color objects
+  arcDefs.forEach(a => { a.color = COLOR_MAP[a.color]; });
+
+  arcDefs.forEach(def => {
+    const pts = [];
+    for (let i = 0; i <= 120; i++) {
+      const angle = def.startAngle + (i / 120) * def.sweep;
+      pts.push(new THREE.Vector3(def.cx + Math.cos(angle) * def.r, def.cy + Math.sin(angle) * def.r, 0));
+    }
+    const geo = new THREE.BufferGeometry().setFromPoints(pts);
+    pGroup.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: def.opacity })));
+    bloomPGroup.add(new THREE.Line(geo.clone(), new THREE.LineBasicMaterial({ color: def.color, transparent: true, opacity: def.opacity * 0.4 })));
+  });
+
+  // ─── Arc Runners → pGroup ───
+  const arcRunners = [];
+  arcDefs.forEach((def, ai) => {
+    for (let j = 0; j < 2; j++) {
+      const mat = new THREE.MeshBasicMaterial({ color: def.color, transparent: true, opacity: 0.95, blending: THREE.AdditiveBlending });
+      const mesh = new THREE.Mesh(new THREE.CircleGeometry(0.045, 10), mat);
+      mesh.position.z = 0.02;
+      pGroup.add(mesh);
+      const trail = new THREE.Sprite(new THREE.SpriteMaterial({ map: softGlowTexture, color: def.color, transparent: true, opacity: 0.6, blending: THREE.AdditiveBlending }));
+      trail.scale.set(0.6, 0.6, 1);
+      mesh.add(trail);
+      arcRunners.push({ mesh, arcIdx: ai, t: j / 2, speed: 0.08 + Math.random() * 0.04, mat });
+    }
+  });
+
+  // ═══════════════════════════════════════════════════════
+  // NIB — derived from spec geometry
+  //   Rect.1 width = 1.0192, centered at x = -0.8799
+  //   Circ.Rect.I: center (-0.8799, -2.1008), r = 0.5096
+  //   Top of nib circle: y = -1.5912 (node 12)
+  //   Shoulders: nodes 10 (-0.3703) and 11 (-1.3895) at y = -0.8705
+  //   Tip: node 14 at (-0.8799, -3.12)
+  // ═══════════════════════════════════════════════════════
+  // Nib outline: tip → right shoulder → notch → left shoulder → tip
+  const NIB_DATA = /* __NIB_DATA__ */{};
+  const NIB_TIP_Y  = NIB_DATA.tipY;
+  const NIB_TOP_Y  = NIB_DATA.topY;
+  const NIB_CX     = NIB_DATA.cx;
+  const NIB_LEFT   = NIB_DATA.left;
+  const NIB_RIGHT  = NIB_DATA.right;
+
+  pGroup.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(NIB_CX,    NIB_TIP_Y, 0),
+      new THREE.Vector3(NIB_RIGHT, NIB_TOP_Y, 0),
+      new THREE.Vector3(NIB_CX,    NIB_TOP_Y - 0.25, 0),  // notch
+      new THREE.Vector3(NIB_LEFT,  NIB_TOP_Y, 0),
+      new THREE.Vector3(NIB_CX,    NIB_TIP_Y, 0),
+    ]),
+    new THREE.LineBasicMaterial({ color: COPPER, transparent: true, opacity: 0.8 })
+  ));
+
+  // Nib center slit
+  pGroup.add(new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(NIB_CX, NIB_TIP_Y + 0.08, 0.01),
+      new THREE.Vector3(NIB_CX, NIB_TOP_Y - 0.15, 0.01),
+    ]),
+    new THREE.LineBasicMaterial({ color: BLUEGLOW, transparent: true, opacity: 0.4 })
+  ));
+
+  // Nib ball at Circ.Rect.I center
+  const nibBall = new THREE.Mesh(new THREE.CircleGeometry(0.05, 14), new THREE.MeshBasicMaterial({ color: COPPER }));
+  nibBall.position.set(NIB_CX, NIB_DATA.ctrY, 0.02);
+  pGroup.add(nibBall);
+
+  // Nib glow
+  const nibGlowMat = new THREE.SpriteMaterial({ map: glowTexture, color: AMBER, transparent: true, opacity: 0.7, blending: THREE.AdditiveBlending });
+  const nibGlow = new THREE.Sprite(nibGlowMat);
+  nibGlow.position.set(NIB_CX, NIB_DATA.ctrY, 0.015);
+  nibGlow.scale.set(0.8, 0.8, 1);
+  pGroup.add(nibGlow);
+
+  // ─── Ink Drops → pGroup ───
+  const inkDrops = [];
+  for (let i = 0; i < 20; i++) {
+    const col = [COPPER, BRONZE, WARMWHT][Math.floor(Math.random() * 3)];
+    const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0 });
+    const mesh = new THREE.Mesh(new THREE.CircleGeometry(0.02 + Math.random() * 0.025, 8), mat);
+    mesh.position.set(NIB_CX, NIB_TIP_Y, 0.01);
+    pGroup.add(mesh);
+    inkDrops.push({ mesh, mat, active: false, life: 0, maxLife: 0, vx: 0, vy: 0 });
+  }
+  function emitInkDrop() {
+    const d = inkDrops.find(d => !d.active);
+    if (!d) return;
+    d.active = true; d.life = 0;
+    d.maxLife = 1.5 + Math.random() * 1.5;
+    d.mesh.position.set(NIB_CX, NIB_TIP_Y, 0.01);
+    d.vx = (Math.random() - 0.5) * 0.3;
+    d.vy = -0.3 - Math.random() * 0.5;
+  }
+
+  // ─── Floating Particles → pGroup ───
+  const particles = [];
+  for (let i = 0; i < 55; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const radius = (0.8 + Math.random() * 3.5) / P_SCALE;
+    const col = [COPPER, AMBER, BRONZE, WARMWHT, BLUEGLOW][Math.floor(Math.random() * 5)];
+    const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0 });
+    const mesh = new THREE.Mesh(new THREE.CircleGeometry(0.012 + Math.random() * 0.025, 8), mat);
+    mesh.position.set(Math.cos(angle) * radius, Math.sin(angle) * radius, 0.001);
+    pGroup.add(mesh);
+    particles.push({
+      mesh, angle, radius, mat,
+      speed: 0.0002 + Math.random() * 0.0008,
+      drift: (Math.random() - 0.5) * 0.0015,
+      phase: Math.random() * Math.PI * 2,
+      targetOpacity: 0.2 + Math.random() * 0.35,
+      maxR: 4.3 / P_SCALE, minR: 0.6 / P_SCALE,
+    });
+  }
+
+  // ─── Traveling Pulses → pGroup ───
+  const pulses = [];
+  for (let i = 0; i < 10; i++) {
+    const col = [COPPER, AMBER, WARMWHT, BLUEGLOW][Math.floor(Math.random() * 4)];
+    const mat = new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+    const mesh = new THREE.Mesh(new THREE.CircleGeometry(0.04, 8), mat);
+    mesh.position.z = 0.02;
+    pGroup.add(mesh);
+    const glowMat = new THREE.SpriteMaterial({ map: glowTexture, color: col, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+    const glow = new THREE.Sprite(glowMat);
+    glow.scale.set(0.4, 0.4, 1);
+    mesh.add(glow);
+    pulses.push({ mesh, edgeIdx: Math.floor(Math.random() * uniqueEdges.length), t: Math.random(), speed: 0.002 + Math.random() * 0.004, mat, glowMat });
+  }
+
+  // ─── Wave System ───
+  let waveTimer = 3.0;
+  function triggerWave(startNode) {
+    const visited = new Set();
+    const queue = [{ node: startNode, delay: 0 }];
+    visited.add(startNode);
+    while (queue.length) {
+      const { node, delay } = queue.shift();
+      const nm = nodeMeshes[node];
+      nm.waveIntensity = Math.max(nm.waveIntensity, 1.0);
+      nm.waveDelay = delay; nm.waveTime = 0;
+      adjacency[node].forEach(({ node: neighbor, edge }) => {
+        const em = edgeMeshes[edge];
+        em.waveIntensity = Math.max(em.waveIntensity, 1.0);
+        em.waveDelay = delay + 0.06; em.waveTime = 0;
+        if (!visited.has(neighbor)) { visited.add(neighbor); queue.push({ node: neighbor, delay: delay + 0.12 }); }
+      });
+    }
+  }
+
+  // ─── Energy Rings → scene ───
+  const energyRings = [];
+  let energyRingTimer = 0;
+  function spawnEnergyRing() {
+    const geo = new THREE.RingGeometry(0.1, 0.15, 64);
+    const mat = new THREE.MeshBasicMaterial({ color: ROSEGOLD, side: THREE.DoubleSide, transparent: true, opacity: 0.5, blending: THREE.AdditiveBlending });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.position.z = -0.01;
+    scene.add(mesh);
+    energyRings.push({ mesh, mat, life: 0, maxLife: 3.0, geo });
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // ANIMATION LOOP
+  // ═══════════════════════════════════════════════════════
+  const clock = new THREE.Clock();
+  let elapsed = 0, inkTimer = 0;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    const dt = Math.min(clock.getDelta(), 0.1);
+    elapsed += dt;
+
+    drawNebulaBackground(elapsed);
+
+    waveTimer += dt;
+    if (waveTimer >= 4.5) { waveTimer = 0; triggerWave(Math.floor(Math.random() * wireNodes.length)); }
+    energyRingTimer += dt;
+    if (energyRingTimer >= 5.0) { energyRingTimer = 0; spawnEnergyRing(); }
+
+    ringMat.opacity = 0.88 + 0.08 * Math.sin(elapsed * 0.8);
+
+    // Nodes
+    nodeMeshes.forEach(n => {
+      const pulse = 0.5 + 0.5 * Math.sin(elapsed * 1.8 + n.phase);
+      let wf = 0;
+      if (n.waveIntensity > 0) {
+        n.waveTime = (n.waveTime || 0) + dt;
+        const wt = n.waveTime - (n.waveDelay || 0);
+        if (wt > 0) { wf = n.waveIntensity * Math.max(0, 1 - wt * 1.5); if (wf <= 0) n.waveIntensity = 0; }
+      }
+      const tp = Math.min(1, pulse * 0.7 + wf * 0.8);
+      n.spriteMat.opacity = n.baseOpacity * (0.4 + 0.6 * tp);
+      n.sprite.scale.setScalar(n.baseScale * (0.85 + 0.3 * tp + wf * 0.5));
+      n.coreMat.opacity = 0.7 + 0.3 * tp;
+      n.bloomMat.opacity = n.baseOpacity * 0.3 * (0.3 + 0.7 * tp);
+      n.bloomSprite.scale.setScalar(n.baseScale * 2 * (0.8 + 0.4 * tp));
+    });
+
+    // Edges
+    edgeMeshes.forEach((e, i) => {
+      const bp = 0.35 + 0.25 * Math.sin(elapsed * 1.2 + i * 0.5);
+      let wf = 0;
+      if (e.waveIntensity > 0) {
+        e.waveTime = (e.waveTime || 0) + dt;
+        const wt = e.waveTime - (e.waveDelay || 0);
+        if (wt > 0) { wf = e.waveIntensity * Math.max(0, 1 - wt * 1.2); if (wf <= 0) e.waveIntensity = 0; }
+      }
+      e.mat.opacity = Math.min(0.95, bp + wf * 0.6);
+      e.mat.color.copy(e.baseColor); if (wf > 0) e.mat.color.lerp(WHITE, wf * 0.4);
+    });
+
+    // Arc runners
+    arcRunners.forEach(ar => {
+      ar.t += ar.speed * dt; if (ar.t > 1) ar.t -= 1;
+      const def = arcDefs[ar.arcIdx];
+      const angle = def.startAngle + ar.t * def.sweep;
+      ar.mesh.position.x = def.cx + Math.cos(angle) * def.r;
+      ar.mesh.position.y = def.cy + Math.sin(angle) * def.r;
+      ar.mat.opacity = 0.9 * Math.sin(ar.t * Math.PI);
+    });
+
+    // Particles
+    particles.forEach(p => {
+      p.angle += p.speed * (dt / 0.016);
+      p.radius += p.drift * (dt / 0.016);
+      if (p.radius > p.maxR || p.radius < p.minR) p.drift *= -1;
+      p.mesh.position.x = Math.cos(p.angle) * p.radius;
+      p.mesh.position.y = Math.sin(p.angle) * p.radius;
+      p.mat.opacity = p.targetOpacity * (0.4 + 0.6 * (0.5 + 0.5 * Math.sin(elapsed * 0.7 + p.phase)));
+    });
+
+    // Pulses
+    pulses.forEach(p => {
+      p.t += p.speed * (dt / 0.016);
+      if (p.t > 1) { p.t = 0; p.edgeIdx = Math.floor(Math.random() * uniqueEdges.length); }
+      const [ai, bi] = uniqueEdges[p.edgeIdx];
+      const a = wireNodes[ai], b = wireNodes[bi];
+      p.mesh.position.x = a.x + (b.x - a.x) * p.t;
+      p.mesh.position.y = a.y + (b.y - a.y) * p.t;
+      const fade = Math.sin(p.t * Math.PI);
+      p.mat.opacity = 0.85 * fade;
+      p.glowMat.opacity = 0.5 * fade;
+    });
+
+    // Ink
+    inkTimer += dt;
+    if (inkTimer > 0.8 + Math.random() * 1.2) { inkTimer = 0; emitInkDrop(); }
+    inkDrops.forEach(d => {
+      if (!d.active) return;
+      d.life += dt;
+      const t = d.life / d.maxLife;
+      if (t >= 1) { d.active = false; d.mat.opacity = 0; return; }
+      d.mesh.position.x += d.vx * dt;
+      d.mesh.position.y += d.vy * dt;
+      d.vy += 0.15 * dt; d.vx *= 0.995;
+      d.mat.opacity = t < 0.15 ? t / 0.15 * 0.6 : 0.6 * (1 - (t - 0.15) / 0.85);
+    });
+
+    // Energy rings
+    for (let i = energyRings.length - 1; i >= 0; i--) {
+      const er = energyRings[i];
+      er.life += dt;
+      const t = er.life / er.maxLife;
+      if (t >= 1) { scene.remove(er.mesh); er.geo.dispose(); er.mat.dispose(); energyRings.splice(i, 1); continue; }
+      er.mesh.scale.setScalar((0.1 + t * 4.6) / 0.1);
+      er.mat.opacity = 0.3 * (1 - t) * (1 - t);
+    }
+
+    nibGlowMat.opacity = 0.5 + 0.3 * Math.sin(elapsed * 2.5);
+    nibGlow.scale.setScalar(0.7 + 0.15 * Math.sin(elapsed * 2.5));
+
+    camera.position.x = Math.sin(elapsed * 0.18) * 0.06;
+    camera.position.y = Math.cos(elapsed * 0.13) * 0.06;
+
+    renderer.render(scene, camera);
+    bloomRenderer.render(bloomScene, camera);
+  }
+  animate();
+
+  // ─── Responsive ───
+  let resizeTimer = null;
+  function resize() {
+    const s = Math.min(container.clientWidth, container.clientHeight, 700);
+    renderer.setSize(s, s);
+    bloomRenderer.setSize(s / 2, s / 2);
+    bloomRenderer.domElement.style.width = s + 'px';
+    bloomRenderer.domElement.style.height = s + 'px';
+    bgCanvas.style.width = s + 'px';
+    bgCanvas.style.height = s + 'px';
+  }
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(resize, 100); });
+  resize();
+})();
+</script>
+</body>
+</html>

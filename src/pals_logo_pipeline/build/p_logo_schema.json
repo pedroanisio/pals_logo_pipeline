@@ -1,0 +1,621 @@
+{
+  "coordinate_system": {
+    "P.CENTER.A": {
+      "x": 0.3504,
+      "y": 0.8694
+    },
+    "free_parameters": {
+      "R_GREEN": 1.2303,
+      "description": "Single free parameter. All radii derived via \u221a2 chain."
+    },
+    "derived_radii": {
+      "Circ.D": {
+        "value": 0.869953472893809,
+        "formula": "R_GREEN / \u221a2",
+        "maps_to": "Blue arc"
+      },
+      "Circ.Bounds.A": {
+        "value": 1.2303,
+        "formula": "free parameter",
+        "maps_to": "Green arc"
+      },
+      "Circ.A": {
+        "value": 1.7399069457876184,
+        "formula": "R_GREEN \u00d7 \u221a2",
+        "maps_to": "Gold arc"
+      }
+    },
+    "derived_constants": {
+      "R_VERTEX": {
+        "value": 0.5096069457876184,
+        "formula": "Circ.A - Circ.Bounds.A"
+      },
+      "Rect.1.right": {
+        "value": -0.37029305421238146,
+        "formula": "P.SQAB.UL.x + Rect.1.width"
+      },
+      "Rect.1.bottom": {
+        "value": -2.610413891575237,
+        "formula": "P.SQAB.UL.y - Rect.1.height"
+      }
+    },
+    "composition_scale": 0.00869953472893809
+  },
+  "geometry": {
+    "shapes": {
+      "Circ.A": {
+        "type": "circle",
+        "center": {
+          "x": 0.3504,
+          "y": 0.8694
+        },
+        "radius": 1.7399069457876184,
+        "maps_to": "Gold arc"
+      },
+      "Circ.Bounds.A": {
+        "type": "circle",
+        "center": {
+          "x": 0.3504,
+          "y": 0.8694
+        },
+        "radius": 1.2303,
+        "maps_to": "Green arc"
+      },
+      "Circ.D": {
+        "type": "circle",
+        "center": {
+          "x": 0.3504,
+          "y": 0.8694
+        },
+        "radius": 0.869953472893809,
+        "maps_to": "Blue arc"
+      },
+      "Square.B": {
+        "type": "square",
+        "description": "Circumscribed around Circ.A",
+        "vertices": {
+          "P.SQAB.UL": {
+            "x": -1.3895069457876184,
+            "y": 2.609306945787618
+          },
+          "P.SQAB.UR": {
+            "x": 2.0903069457876184,
+            "y": 2.609306945787618
+          },
+          "P.SQAB.LL": {
+            "x": -1.3895069457876184,
+            "y": -0.8705069457876184
+          },
+          "P.SQAB.LR": {
+            "x": 2.0903069457876184,
+            "y": -0.8705069457876184
+          }
+        }
+      },
+      "Square.A": {
+        "type": "square",
+        "description": "Inscribed in Circ.A (45\u00b0 rotated)",
+        "vertices": {
+          "P.SQA.V1": {
+            "x": 1.5807,
+            "y": 2.0997
+          },
+          "P.SQA.V2": {
+            "x": -0.8798999999999999,
+            "y": 2.0997
+          },
+          "P.SQA.V3": {
+            "x": -0.8798999999999999,
+            "y": -0.3609
+          },
+          "P.SQA.V4": {
+            "x": 1.5807,
+            "y": -0.3609
+          }
+        }
+      },
+      "Square.D": {
+        "type": "square",
+        "description": "Inscribed in Circ.Bounds.A (45\u00b0 rotated) = Green IS",
+        "vertices": {
+          "P.SQD.D1": {
+            "x": 1.2203534728938092,
+            "y": 1.7393534728938094
+          },
+          "P.SQD.D2": {
+            "x": -0.5195534728938094,
+            "y": 1.7393534728938094
+          },
+          "P.SQD.D3": {
+            "x": -0.5195534728938094,
+            "y": -0.0005534728938093592
+          },
+          "P.SQD.D4": {
+            "x": 1.2203534728938092,
+            "y": -0.0005534728938093592
+          }
+        }
+      },
+      "Rect.1": {
+        "type": "rectangle",
+        "description": "P pole / stem",
+        "vertices": {
+          "P.RECT.UL": {
+            "x": -1.3895069457876188,
+            "y": 2.609306945787618
+          },
+          "P.RECT.UR": {
+            "x": -0.37029305421238146,
+            "y": 2.609306945787618
+          },
+          "P.RECT.LL": {
+            "x": -1.3895069457876188,
+            "y": -2.610413891575237
+          },
+          "P.RECT.LR": {
+            "x": -0.37029305421238146,
+            "y": -2.610413891575237
+          }
+        },
+        "width": 1.0192138915752373,
+        "height": 5.219720837362855
+      },
+      "Circ.Rect.I": {
+        "type": "circle",
+        "description": "Inscribed in Rect.1 at bottom (nib circle)",
+        "center": {
+          "x": -0.8799000000000001,
+          "y": -2.1008069457876184
+        },
+        "radius": 0.5096069457876187
+      },
+      "Circ.Rect.V": {
+        "type": "circle",
+        "description": "External vertex circle at Rect.1 bottom",
+        "center": {
+          "x": -0.8799000000000001,
+          "y": -3.1200208373628557
+        },
+        "radius": 0.5096069457876187
+      }
+    },
+    "arcs": [
+      {
+        "name": "Green",
+        "center": {
+          "x": 0.3504,
+          "y": 0.8694
+        },
+        "radius": 1.2303,
+        "start_angle": -1.5707963267948966,
+        "sweep_angle": 3.141592653589793,
+        "start_deg": -90.0,
+        "end_deg": 90.0
+      },
+      {
+        "name": "Blue",
+        "center": {
+          "x": 0.3504,
+          "y": 0.8694
+        },
+        "radius": 0.869953472893809,
+        "start_angle": -1.5707963267948966,
+        "sweep_angle": 3.141592653589793,
+        "start_deg": -90.0,
+        "end_deg": 90.0
+      },
+      {
+        "name": "Gold",
+        "center": {
+          "x": 0.3504,
+          "y": 0.8694
+        },
+        "radius": 1.7399069457876184,
+        "start_angle": -1.5707963267948966,
+        "sweep_angle": 3.141592653589793,
+        "start_deg": -90.0,
+        "end_deg": 90.0
+      }
+    ],
+    "tangent_points": {
+      "P.CA.TANGENT.BOTTOM": {
+        "x": 0.3504,
+        "y": -0.8705069457876184,
+        "node": 17
+      },
+      "P.CA.TANGENT.RIGHT": {
+        "x": 2.0903069457876184,
+        "y": 0.8694,
+        "node": 20
+      },
+      "P.CA.TANGENT.TOP": {
+        "x": 0.3504,
+        "y": 2.609306945787618,
+        "node": null,
+        "note": "above arc"
+      }
+    }
+  },
+  "graph": {
+    "nodes": [
+      {
+        "id": 0,
+        "x": -1.3895,
+        "y": 2.6093,
+        "key_node": false,
+        "composition_point": "P.SQAB.UL",
+        "source": "Square.B upper-left"
+      },
+      {
+        "id": 1,
+        "x": 0.3504,
+        "y": 2.6093,
+        "key_node": true,
+        "composition_point": "P.CENTER.A",
+        "source": "center x, Square.B top y"
+      },
+      {
+        "id": 2,
+        "x": 1.2204,
+        "y": 1.7394,
+        "key_node": false,
+        "composition_point": "P.SQD.D1",
+        "source": "Square.D vertex 45\u00b0"
+      },
+      {
+        "id": 3,
+        "x": 0.3504,
+        "y": -0.0006,
+        "key_node": false,
+        "composition_point": "P.CA.TANGENT.BOTTOM",
+        "source": "Circ.D tangent bottom"
+      },
+      {
+        "id": 4,
+        "x": -0.8799,
+        "y": 2.0997,
+        "key_node": false,
+        "composition_point": "P.SQA.V2",
+        "source": "Square.A left x, Circ.Bounds.A tangent top y"
+      },
+      {
+        "id": 5,
+        "x": 0.3504,
+        "y": 1.7394,
+        "key_node": false,
+        "composition_point": "P.CA.TANGENT.TOP",
+        "source": "Circ.D tangent top"
+      },
+      {
+        "id": 6,
+        "x": 1.2204,
+        "y": 0.8694,
+        "key_node": false,
+        "composition_point": "P.CA.TANGENT.RIGHT",
+        "source": "Circ.D tangent right"
+      },
+      {
+        "id": 7,
+        "x": -1.3895,
+        "y": -0.0006,
+        "key_node": true,
+        "composition_point": "P.SQAB.UL",
+        "source": "Square.B left x, Circ.D bottom y"
+      },
+      {
+        "id": 8,
+        "x": -0.3703,
+        "y": -0.0006,
+        "key_node": false,
+        "composition_point": "P.RECT.UR",
+        "source": "Rect.1 right x, Circ.D bottom y"
+      },
+      {
+        "id": 9,
+        "x": -0.8799,
+        "y": -0.3609,
+        "key_node": true,
+        "composition_point": "P.SQA.V3",
+        "source": "Square.A left x, Circ.Bounds.A tangent bottom y"
+      },
+      {
+        "id": 10,
+        "x": -0.3703,
+        "y": -0.8705,
+        "key_node": false,
+        "composition_point": "P.RECT.LR",
+        "source": "Rect.1 right x, Square.B bottom y"
+      },
+      {
+        "id": 11,
+        "x": -1.3895,
+        "y": -0.8705,
+        "key_node": true,
+        "composition_point": "P.SQAB.LL",
+        "source": "Square.B lower-left"
+      },
+      {
+        "id": 12,
+        "x": -0.8799,
+        "y": -1.5912,
+        "key_node": false,
+        "composition_point": "P.CIRC.RECT.I",
+        "source": "Circ.Rect.I top"
+      },
+      {
+        "id": 13,
+        "x": -0.8799,
+        "y": -2.1008,
+        "key_node": false,
+        "composition_point": "P.CIRC.RECT.I.CENTER",
+        "source": "Circ.Rect.I center"
+      },
+      {
+        "id": 14,
+        "x": -0.8799,
+        "y": -3.12,
+        "key_node": false,
+        "composition_point": "P.CIRC.RECT.V.CENTER",
+        "source": "Circ.Rect.V center"
+      },
+      {
+        "id": 15,
+        "x": -0.3703,
+        "y": 1.7394,
+        "key_node": false,
+        "composition_point": "P.RECT.UR",
+        "source": "Rect.1 right x, Circ.D top y"
+      },
+      {
+        "id": 16,
+        "x": -0.3703,
+        "y": -0.8705,
+        "key_node": true,
+        "composition_point": "P.RECT.LR",
+        "source": "Rect.1 right x, Circ.A bottom y"
+      },
+      {
+        "id": 17,
+        "x": 0.3504,
+        "y": -0.8705,
+        "key_node": true,
+        "composition_point": "P.CA.TANGENT.BOTTOM",
+        "source": "Circ.A tangent bottom"
+      },
+      {
+        "id": 18,
+        "x": 0.3504,
+        "y": -0.3609,
+        "key_node": true,
+        "composition_point": null,
+        "source": "Circ.Bounds.A tangent bottom"
+      },
+      {
+        "id": 19,
+        "x": 0.3504,
+        "y": 2.0997,
+        "key_node": true,
+        "composition_point": null,
+        "source": "Circ.Bounds.A tangent top"
+      },
+      {
+        "id": 20,
+        "x": 2.0903,
+        "y": 0.8694,
+        "key_node": true,
+        "composition_point": "P.CA.TANGENT.RIGHT",
+        "source": "Circ.A tangent right"
+      },
+      {
+        "id": 21,
+        "x": 1.2204,
+        "y": -0.0006,
+        "key_node": false,
+        "composition_point": "P.SQD.D4",
+        "source": "Square.D vertex 315\u00b0"
+      },
+      {
+        "id": 22,
+        "x": -1.3895,
+        "y": -1.5912,
+        "key_node": false,
+        "composition_point": "P.RECT.LL.WAIST",
+        "source": "Rect.1 left at Circ.Rect.I top y"
+      },
+      {
+        "id": 23,
+        "x": -0.3703,
+        "y": -1.5912,
+        "key_node": false,
+        "composition_point": "P.RECT.LR.WAIST",
+        "source": "Rect.1 right at Circ.Rect.I top y"
+      },
+      {
+        "id": 24,
+        "x": -0.8799,
+        "y": -1.2309,
+        "key_node": false,
+        "composition_point": "P.BUMP.HUB",
+        "source": "Bump center hub"
+      }
+    ],
+    "edges": [
+      {
+        "from": 0,
+        "to": 1
+      },
+      {
+        "from": 7,
+        "to": 0
+      },
+      {
+        "from": 11,
+        "to": 7
+      },
+      {
+        "from": 7,
+        "to": 8
+      },
+      {
+        "from": 3,
+        "to": 8
+      },
+      {
+        "from": 16,
+        "to": 10
+      },
+      {
+        "from": 7,
+        "to": 9
+      },
+      {
+        "from": 8,
+        "to": 9
+      },
+      {
+        "from": 9,
+        "to": 10
+      },
+      {
+        "from": 9,
+        "to": 11
+      },
+      {
+        "from": 11,
+        "to": 22
+      },
+      {
+        "from": 10,
+        "to": 23
+      },
+      {
+        "from": 22,
+        "to": 23
+      },
+      {
+        "from": 10,
+        "to": 22
+      },
+      {
+        "from": 11,
+        "to": 23
+      },
+      {
+        "from": 24,
+        "to": 10
+      },
+      {
+        "from": 24,
+        "to": 11
+      },
+      {
+        "from": 24,
+        "to": 22
+      },
+      {
+        "from": 24,
+        "to": 23
+      },
+      {
+        "from": 24,
+        "to": 12
+      },
+      {
+        "from": 22,
+        "to": 12
+      },
+      {
+        "from": 23,
+        "to": 12
+      },
+      {
+        "from": 12,
+        "to": 13
+      },
+      {
+        "from": 13,
+        "to": 14
+      },
+      {
+        "from": 4,
+        "to": 9
+      },
+      {
+        "from": 4,
+        "to": 19
+      },
+      {
+        "from": 0,
+        "to": 4
+      },
+      {
+        "from": 15,
+        "to": 4
+      },
+      {
+        "from": 15,
+        "to": 5
+      },
+      {
+        "from": 15,
+        "to": 7
+      },
+      {
+        "from": 15,
+        "to": 8
+      },
+      {
+        "from": 2,
+        "to": 5
+      },
+      {
+        "from": 2,
+        "to": 6
+      },
+      {
+        "from": 2,
+        "to": 20
+      },
+      {
+        "from": 18,
+        "to": 9
+      },
+      {
+        "from": 17,
+        "to": 16
+      },
+      {
+        "from": 20,
+        "to": 21
+      },
+      {
+        "from": 21,
+        "to": 17
+      },
+      {
+        "from": 6,
+        "to": 20
+      },
+      {
+        "from": 6,
+        "to": 21
+      },
+      {
+        "from": 3,
+        "to": 18
+      },
+      {
+        "from": 17,
+        "to": 18
+      },
+      {
+        "from": 2,
+        "to": 21
+      },
+      {
+        "from": 21,
+        "to": 3
+      }
+    ]
+  }
+}

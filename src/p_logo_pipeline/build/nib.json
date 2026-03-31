@@ -1,0 +1,161 @@
+{
+  "_meta": {
+    "step": 2,
+    "name": "nib",
+    "description": "Pen nib geometry \u2014 fan lines, diamond outline, center line, accent nodes, junction ball, ink origin.",
+    "version": "1.0"
+  },
+  "params": {
+    "tip_y": -4.0,
+    "top_y": -3.1,
+    "half_width": 0.55,
+    "fan_count": 3,
+    "center_x": -0.8799
+  },
+  "fan_lines": [
+    {
+      "x1": -0.8799,
+      "y1": -4.0,
+      "x2": -0.6965666666666667,
+      "y2": -3.0500000000000003,
+      "color": "copper",
+      "thickness": 0.03,
+      "opacity": 0.45
+    },
+    {
+      "x1": -0.8799,
+      "y1": -4.0,
+      "x2": -1.0632333333333333,
+      "y2": -3.0500000000000003,
+      "color": "copper",
+      "thickness": 0.03,
+      "opacity": 0.45
+    },
+    {
+      "x1": -0.8799,
+      "y1": -4.0,
+      "x2": -0.5132333333333333,
+      "y2": -3.0,
+      "color": "copper",
+      "thickness": 0.03,
+      "opacity": 0.45
+    },
+    {
+      "x1": -0.8799,
+      "y1": -4.0,
+      "x2": -1.2465666666666668,
+      "y2": -3.0,
+      "color": "copper",
+      "thickness": 0.03,
+      "opacity": 0.45
+    },
+    {
+      "x1": -0.8799,
+      "y1": -4.0,
+      "x2": -0.32989999999999997,
+      "y2": -2.95,
+      "color": "copper",
+      "thickness": 0.03,
+      "opacity": 0.45
+    },
+    {
+      "x1": -0.8799,
+      "y1": -4.0,
+      "x2": -1.4299,
+      "y2": -2.95,
+      "color": "copper",
+      "thickness": 0.03,
+      "opacity": 0.45
+    }
+  ],
+  "outline_lines": [
+    {
+      "x1": -0.8799,
+      "y1": -3.1,
+      "x2": -0.32989999999999997,
+      "y2": -3.46,
+      "color": "bronze",
+      "thickness": 0.03,
+      "opacity": 0.6
+    },
+    {
+      "x1": -0.32989999999999997,
+      "y1": -3.46,
+      "x2": -0.8799,
+      "y2": -3.6849999999999996,
+      "color": "bronze",
+      "thickness": 0.03,
+      "opacity": 0.6
+    },
+    {
+      "x1": -0.8799,
+      "y1": -3.6849999999999996,
+      "x2": -1.4299,
+      "y2": -3.46,
+      "color": "bronze",
+      "thickness": 0.03,
+      "opacity": 0.6
+    },
+    {
+      "x1": -1.4299,
+      "y1": -3.46,
+      "x2": -0.8799,
+      "y2": -3.1,
+      "color": "bronze",
+      "thickness": 0.03,
+      "opacity": 0.6
+    }
+  ],
+  "center_line": {
+    "x1": -0.8799,
+    "y1": -4.0,
+    "x2": -0.8799,
+    "y2": -3.1,
+    "color": "blue_glow",
+    "thickness": 0.025,
+    "opacity": 0.55
+  },
+  "accent_nodes": [
+    {
+      "x": -1.1549,
+      "y": -3.02,
+      "color": "copper",
+      "radius": 0.06
+    },
+    {
+      "x": -0.6049,
+      "y": -3.02,
+      "color": "copper",
+      "radius": 0.06
+    },
+    {
+      "x": -1.4299,
+      "y": -2.95,
+      "color": "amber",
+      "radius": 0.05
+    },
+    {
+      "x": -0.32989999999999997,
+      "y": -2.95,
+      "color": "amber",
+      "radius": 0.05
+    }
+  ],
+  "junction_ball": {
+    "x": -0.8799,
+    "y": -3.15,
+    "radius": 0.1,
+    "color": "warm_white",
+    "opacity": 0.95,
+    "glow_size": 0.8,
+    "glow_color": "warm_white",
+    "glow_opacity": 0.45,
+    "bloom_size": 1.6,
+    "bloom_color": "amber",
+    "bloom_opacity": 0.15
+  },
+  "ink_origin": {
+    "x": -0.8799,
+    "y": -4.0
+  }
+}
