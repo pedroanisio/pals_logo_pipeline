@@ -49,10 +49,12 @@ A 7-step pipeline that transforms the schema into a self-contained animated HTML
 | 3 | `arcs.py` | `palette.json`, `projection.json` | `build/arcs.json` |
 | 4 | `layout.py` | `palette.json`, `graph.json`, `nib.json`, `arcs.json` | `build/layout.json` |
 | 5 | `animations.py` | `palette.json`, `graph.json`, `arcs.json` | `build/animations.json` |
-| 6 | `render.py` | `palette.json`, `layout.json`, `animations.json` | `build/logo.html` |
+| 6 | `render.py` | `palette.json`, `layout.json`, `animations.json` | `build/logos/p_logo_pipeline.html` |
 | 7 | `validate_step.py` | all `build/` artifacts | pass/fail report |
 
-An additional `render_overlay.py` produces `build/logo_overlay.html` showing both construction planes (Plane A geometry fading into Plane B logo).
+An additional `render_overlay.py` produces `build/logos/p_logo_pipeline_overlay.html` showing both construction planes (Plane A geometry fading into Plane B logo).
+
+All generated logos are written to the unified `build/logos/` directory.
 
 ## All Scripts
 
@@ -230,17 +232,19 @@ R_GREEN (free parameter)
     |              |
     |       animations.py
     |              |
-    |          render.py --> build/logo.html
+    |          render.py --> build/logos/p_logo_pipeline.html
     |              |
     |       validate_step.py --> pass/fail
     |
-    +-- render_overlay.py --> build/logo_overlay.html
+    +-- render_overlay.py --> build/logos/p_logo_pipeline_overlay.html
 ```
 
 ## Directory Structure
 
 ```
 pals_logo_pipeline/
+  build/
+    logos/              # ← Unified output folder for all generated logos
   references/          # Legacy code and reference image
   scripts/             # CLI wrappers for rendering and export
     generate_all.py    #   Regenerate all outputs (JSON, PNG, SVG, HTML, GIF)
@@ -251,10 +255,31 @@ pals_logo_pipeline/
   src/
     p_logo/            # Core geometry library (frozen schema)
     p_logo_pipeline/   # Build pipeline (7 steps + overlay)
-      build/           # Generated artifacts (JSON, HTML)
+      build/           # Pipeline intermediate artifacts (JSON)
   tests/
     unit/              # Migration and export tests
 ```
+
+### Output Naming Convention
+
+All generated logos go to `build/logos/` with the pattern `p_logo_{renderer}_{variant}.{ext}`:
+
+| File | Renderer | Description |
+|------|----------|-------------|
+| `p_logo_schema.json` | — | Canonical schema |
+| `p_logo_bw_dark.png` | `bw` | White logo on black background |
+| `p_logo_bw_light.png` | `bw` | Black logo on white background |
+| `p_logo_bw_overlay_dark.png` | `bw` | Composition overlay (dark) |
+| `p_logo_bw_overlay_light.png` | `bw` | Composition overlay (light) |
+| `p_logo_cairo_{size}.png` | `cairo` | Cairo crafted-logic render |
+| `p_logo_cairo_{size}_transparent.png` | `cairo` | Transparent background |
+| `p_logo_cairo_debug_{size}.png` | `cairo` | Debug construction lines |
+| `p_logo_v16_technical.png` | `v16` | Technical drawing style |
+| `p_logo_vector.svg` | — | Vector SVG |
+| `p_logo_threejs.html` | `threejs` | Three.js animation (exporter) |
+| `p_logo_animated.gif` | — | Animated GIF |
+| `p_logo_pipeline.html` | `pipeline` | Three.js animation (pipeline) |
+| `p_logo_pipeline_overlay.html` | `pipeline` | Plane A→B construction overlay |
 
 ## Usage
 
