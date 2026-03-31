@@ -172,12 +172,12 @@ def _build_runner_path_elements(
     return elements
 
 
-def _build_nib_elements(
+def _build_nib_line_elements(
     nib: dict, co: dict
 ) -> list[dict[str, Any]]:
+    """Build fan, outline, and center line elements."""
     elements = []
 
-    # Fan lines
     for line in nib["fan_lines"]:
         x1, y1 = _offset_xy(line["x1"], line["y1"], co)
         x2, y2 = _offset_xy(line["x2"], line["y2"], co)
@@ -190,7 +190,6 @@ def _build_nib_elements(
             "z": Z_NIB_FAN,
         })
 
-    # Outline lines
     for line in nib["outline_lines"]:
         x1, y1 = _offset_xy(line["x1"], line["y1"], co)
         x2, y2 = _offset_xy(line["x2"], line["y2"], co)
@@ -203,7 +202,6 @@ def _build_nib_elements(
             "z": Z_NIB_OUTLINE,
         })
 
-    # Center line
     cl = nib["center_line"]
     x1, y1 = _offset_xy(cl["x1"], cl["y1"], co)
     x2, y2 = _offset_xy(cl["x2"], cl["y2"], co)
@@ -216,7 +214,15 @@ def _build_nib_elements(
         "z": Z_NIB_CENTER,
     })
 
-    # Accent nodes
+    return elements
+
+
+def _build_nib_node_elements(
+    nib: dict, co: dict
+) -> list[dict[str, Any]]:
+    """Build accent node and junction ball elements."""
+    elements = []
+
     for node in nib["accent_nodes"]:
         x, y = _offset_xy(node["x"], node["y"], co)
         elements.append({
@@ -227,7 +233,6 @@ def _build_nib_elements(
             "z": Z_NIB_ACCENT,
         })
 
-    # Junction ball
     jb = nib["junction_ball"]
     x, y = _offset_xy(jb["x"], jb["y"], co)
     elements.append({
@@ -245,15 +250,28 @@ def _build_nib_elements(
         "z": Z_JUNCTION_BALL,
     })
 
-    # Ink origin
+    return elements
+
+
+def _build_nib_ink_element(
+    nib: dict, co: dict
+) -> dict[str, Any]:
+    """Build the ink origin element."""
     io = nib["ink_origin"]
     x, y = _offset_xy(io["x"], io["y"], co)
-    elements.append({
+    return {
         "type": "ink_origin",
         "x": x, "y": y,
         "z": Z_INK_ORIGIN,
-    })
+    }
 
+
+def _build_nib_elements(
+    nib: dict, co: dict
+) -> list[dict[str, Any]]:
+    elements = _build_nib_line_elements(nib, co)
+    elements.extend(_build_nib_node_elements(nib, co))
+    elements.append(_build_nib_ink_element(nib, co))
     return elements
 
 

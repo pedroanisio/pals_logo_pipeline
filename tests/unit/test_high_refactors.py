@@ -199,7 +199,7 @@ class TestPointFieldDeterminism:
 
     def test_hash_matches_snapshot(self, field):
         h = hashlib.sha256(json.dumps(field, sort_keys=True).encode()).hexdigest()
-        assert h[:16] == "ca561ac17b383981"
+        assert h[:16] == "b4a9d913ac92cf7f"
 
 
 class TestPointFieldCustomParams:
@@ -220,13 +220,14 @@ class TestValidationReport:
         assert validation_report["passed"] is True
 
     def test_check_count(self, validation_report):
-        assert len(validation_report["checks"]) == 15
+        assert len(validation_report["checks"]) == 16
 
     def test_all_check_names_present(self, validation_report):
         expected = {
             "palette_step_0", "graph_step_1", "layout_step_4",
             "animation_systems_count", "graph_connected",
             "node_count_25", "edge_count_44", "max_degree_6",
+            "node_positions_vs_schema",
             "layout_element_count", "html_valid_structure",
             "html_no_nan", "threejs_included",
             "total_renderable_range", "palette_colors_in_html",
@@ -294,4 +295,4 @@ class TestValidationDeterminism:
         h = hashlib.sha256(
             json.dumps(validation_report, sort_keys=True).encode()
         ).hexdigest()
-        assert h[:16] == "082cd4b9b36bad65"
+        assert h[:16] == "b7e35ecb4d42473e"

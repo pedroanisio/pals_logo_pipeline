@@ -24,6 +24,12 @@ class MatplotlibBWRenderer(PLogoRenderer):
         stroke: float = 3.0,
         invert: bool = False,
     ) -> None:
+        raw_path = output_path + "_raw.png"
+        self._draw_geometry(raw_path, dpi, bg, stroke)
+        self._fit_to_canvas(raw_path, output_path, size, invert)
+
+    def _draw_geometry(self, raw_path: str, dpi: int, bg: str, stroke: float) -> None:
+        """Render the logo geometry to a raw matplotlib PNG."""
         fig, ax = plt.subplots(figsize=(10, 10), dpi=dpi)
         fig.patch.set_facecolor(bg)
         ax.set_facecolor(bg)
@@ -51,9 +57,8 @@ class MatplotlibBWRenderer(PLogoRenderer):
 
         # Nib
         nib = s.nib
-        xs = [p[0] for p in nib.outline]
-        ys = [p[1] for p in nib.outline]
-        ax.plot(xs, ys, color=w, lw=stroke, solid_capstyle="round", zorder=2)
+        ax.plot([p[0] for p in nib.outline], [p[1] for p in nib.outline],
+                color=w, lw=stroke, solid_capstyle="round", zorder=2)
         ax.plot([nib.slit_start[0], nib.slit_end[0]],
                 [nib.slit_start[1], nib.slit_end[1]],
                 color=bg, lw=stroke * 0.5, zorder=3)
@@ -61,20 +66,22 @@ class MatplotlibBWRenderer(PLogoRenderer):
                                 fc=w, ec=w, lw=1.0, zorder=5))
 
         # Nodes
-        r_node = 0.09
         for n in s.nodes:
             if n.id == 14:
                 continue
-            ax.add_patch(plt.Circle((n.x, n.y), r_node, fc=w, ec=w,
+            ax.add_patch(plt.Circle((n.x, n.y), 0.09, fc=w, ec=w,
                                     lw=1.2, zorder=6))
 
         plt.tight_layout(pad=0)
-        plt.savefig(output_path + "_raw.png", dpi=dpi, facecolor=bg,
+        plt.savefig(raw_path, dpi=dpi, facecolor=bg,
                     bbox_inches="tight", pad_inches=0.15)
         plt.close(fig)
 
-        # Fit to canvas
-        img = Image.open(output_path + "_raw.png")
+    @staticmethod
+    def _fit_to_canvas(raw_path: str, output_path: str, size: int, invert: bool) -> None:
+        """Resize the raw render to a square canvas and optionally invert."""
+        import os
+        img = Image.open(raw_path)
         img.thumbnail((size, size), Image.LANCZOS)
         canvas = Image.new("RGB", (size, size), (0, 0, 0))
         x = (size - img.width) // 2
@@ -85,5 +92,4 @@ class MatplotlibBWRenderer(PLogoRenderer):
             canvas = ImageChops.invert(canvas)
 
         canvas.save(output_path)
-        import os
-        os.remove(output_path + "_raw.png")
+        os.remove(raw_path)

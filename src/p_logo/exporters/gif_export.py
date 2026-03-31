@@ -13,42 +13,25 @@ from PIL import Image
 from p_logo.types import PLogoSchema
 
 
-def render_frame(
-    schema: PLogoSchema,
-    phase: float = 0.0,
-    size: int = 800,
-    dpi: int = 100,
-    bg_color: str = "#0e0820",
-    palette: dict | None = None,
-) -> Image.Image:
-    """Render a single animated frame. Returns PIL Image."""
-    if palette is None:
-        palette = {
-            "copper": "#5a9e8c", "amber": "#e8a84c", "bronze": "#b87a4e",
-            "rosegold": "#c4876e", "warmwht": "#ffecd2", "blueglow": "#5b8fd4",
-        }
+_DEFAULT_PALETTE = {
+    "copper": "#5a9e8c", "amber": "#e8a84c", "bronze": "#b87a4e",
+    "rosegold": "#c4876e", "warmwht": "#ffecd2", "blueglow": "#5b8fd4",
+}
 
-    fig_size = size / dpi
-    fig, ax = plt.subplots(figsize=(fig_size, fig_size), dpi=dpi)
-    fig.patch.set_facecolor(bg_color)
-    ax.set_facecolor(bg_color)
-    ax.set_xlim(-5.0, 5.0)
-    ax.set_ylim(-5.0, 5.0)
-    ax.set_aspect("equal")
-    ax.axis("off")
+
+def _draw_frame(ax, schema, phase, bg_color, palette):
+    """Draw all logo elements onto the given axes."""
+    arc_colors = [palette["amber"], palette["copper"], palette["bronze"]]
 
     # Ring
     ax.add_patch(Circle((0, 0), 4.65, fc="none", ec=palette["rosegold"], lw=3.0, alpha=0.85))
     ax.add_patch(Circle((0, 0), 4.55, fc=bg_color, ec="none"))
 
-    arc_colors = [palette["amber"], palette["copper"], palette["bronze"]]
-
-    # Arcs
+    # Arcs + runners
     for i, arc in enumerate(schema.arcs):
         ax.add_patch(Arc((arc.cx, arc.cy), 2*arc.radius, 2*arc.radius,
                          theta1=arc.start_deg, theta2=arc.end_deg,
                          color=arc_colors[i], lw=2.5, alpha=0.7))
-        # Arc runner
         runner_t = (phase * 0.3 + i * 0.33) % 1.0
         angle = arc.start_angle + runner_t * arc.sweep_angle
         rx = arc.cx + arc.radius * np.cos(angle)
@@ -81,6 +64,9 @@ def render_frame(
         ax.add_patch(Circle((n.x, n.y), r, fc=palette["copper"],
                             ec=palette["copper"], alpha=0.65 + 0.35 * pulse, zorder=5))
 
+
+def _capture_frame(fig, dpi, bg_color, size):
+    """Capture the figure as a PIL Image, resize to canvas."""
     buf = io.BytesIO()
     plt.savefig(buf, format="png", dpi=dpi, facecolor=bg_color,
                 bbox_inches="tight", pad_inches=0.1)
@@ -97,6 +83,31 @@ def render_frame(
         img = canvas
 
     return img
+
+
+def render_frame(
+    schema: PLogoSchema,
+    phase: float = 0.0,
+    size: int = 800,
+    dpi: int = 100,
+    bg_color: str = "#0e0820",
+    palette: dict | None = None,
+) -> Image.Image:
+    """Render a single animated frame. Returns PIL Image."""
+    if palette is None:
+        palette = dict(_DEFAULT_PALETTE)
+
+    fig_size = size / dpi
+    fig, ax = plt.subplots(figsize=(fig_size, fig_size), dpi=dpi)
+    fig.patch.set_facecolor(bg_color)
+    ax.set_facecolor(bg_color)
+    ax.set_xlim(-5.0, 5.0)
+    ax.set_ylim(-5.0, 5.0)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+    _draw_frame(ax, schema, phase, bg_color, palette)
+    return _capture_frame(fig, dpi, bg_color, size)
 
 
 def export_gif(

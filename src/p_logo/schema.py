@@ -17,23 +17,9 @@ DEFAULT_CENTER = (0.3504, 0.8694)
 DEFAULT_R_GREEN = 1.2303
 
 
-def build_schema(
-    center: tuple[float, float] = DEFAULT_CENTER,
-    r_green: float = DEFAULT_R_GREEN,
-) -> PLogoSchema:
-    """
-    Build the complete P logo schema from two free parameters.
-
-    All geometry is derived from the composition via the √2 chain:
-        R_BLUE  = R_GREEN / √2
-        R_GREEN = free parameter
-        R_GOLD  = R_GREEN × √2
-    """
+def _derive_geometry(comp, center, r_green):
+    """Extract derived radii and key coordinates from the composition."""
     cx, cy = center
-
-    # ── Derive from composition ───────────────────────────────
-    comp = generate_p_composition(center=center, r_green=r_green)
-
     r_blue = comp["shapes"]["Circ.D"]["radius"]
     r_gold = comp["shapes"]["Circ.A"]["radius"]
     r_vertex = r_gold - r_green
@@ -41,8 +27,6 @@ def build_schema(
 
     rect = comp["shapes"]["Rect.1"]
     rect_r = rect["vertices"]["upper_right"]["x"]
-    rect_bot = rect["vertices"]["lower_left"]["y"]
-    rect_h = rect["height"]
 
     circ_ri = comp["shapes"]["Circ.Rect.I"]
     circ_rv = comp["shapes"]["Circ.Rect.V"]
@@ -50,11 +34,26 @@ def build_schema(
     nib_circ_cy = circ_ri["center"]["y"]
     nib_tip_y = circ_rv["center"]["y"]
 
-    # ── 25 nodes ──────────────────────────────────────────────
-    _nodes_raw = [
+    return {
+        "cx": cx, "cy": cy, "r_blue": r_blue, "r_gold": r_gold,
+        "r_vertex": r_vertex, "g45": g45, "rect_r": rect_r,
+        "nib_cx": nib_cx, "nib_circ_cy": nib_circ_cy, "nib_tip_y": nib_tip_y,
+    }
+
+
+def _build_nodes(d):
+    """Build the 25-node tuple from derived geometry."""
+    cx, cy = d["cx"], d["cy"]
+    r_blue, r_green_45 = d["r_blue"], d["g45"]
+    r_gold, r_vertex = d["r_gold"], d["r_vertex"]
+    r_green = r_gold / math.sqrt(2)  # = original r_green
+    rect_r = d["rect_r"]
+    nib_cx, nib_circ_cy, nib_tip_y = d["nib_cx"], d["nib_circ_cy"], d["nib_tip_y"]
+
+    raw = [
         (cx - r_gold, cy + r_gold,            False, "P.SQAB.UL",           "Square.B upper-left"),
         (cx,          cy + r_gold,            True,  "P.CENTER.A",          "center x, Square.B top y"),
-        (cx + g45,    cy + g45,               False, "P.SQD.D1",            "Square.D vertex 45°"),
+        (cx + r_green_45, cy + r_green_45,    False, "P.SQD.D1",            "Square.D vertex 45°"),
         (cx,          cy - r_blue,            False, "P.CA.TANGENT.BOTTOM", "Circ.D tangent bottom"),
         (cx - r_green, cy + r_green,          False, "P.SQA.V2",            "Square.A left x, Circ.Bounds.A tangent top y"),
         (cx,          cy + r_blue,            False, "P.CA.TANGENT.TOP",    "Circ.D tangent top"),
@@ -73,20 +72,22 @@ def build_schema(
         (cx,          cy - r_green,           True,  None,                   "Circ.Bounds.A tangent bottom"),
         (cx,          cy + r_green,           True,  None,                   "Circ.Bounds.A tangent top"),
         (cx + r_gold, cy,                     True,  "P.CA.TANGENT.RIGHT",  "Circ.A tangent right"),
-        (cx + g45,    cy - g45,               False, "P.SQD.D4",            "Square.D vertex 315°"),
+        (cx + r_green_45, cy - r_green_45,    False, "P.SQD.D4",            "Square.D vertex 315°"),
         (cx - r_gold, nib_circ_cy + r_vertex, False, "P.RECT.LL.WAIST",     "Rect.1 left at Circ.Rect.I top y"),
         (rect_r,      nib_circ_cy + r_vertex, False, "P.RECT.LR.WAIST",     "Rect.1 right at Circ.Rect.I top y"),
         (nib_cx,      (cy - r_gold + nib_circ_cy + r_vertex) / 2, False, "P.BUMP.HUB", "Bump center hub"),
     ]
 
-    nodes = tuple(
+    return tuple(
         Node(id=i, x=round(x, 4), y=round(y, 4), key_node=key,
              composition_point=pt, source=src)
-        for i, (x, y, key, pt, src) in enumerate(_nodes_raw)
+        for i, (x, y, key, pt, src) in enumerate(raw)
     )
 
-    # ── 44 edges with type classification ─────────────────────
-    _edges_typed = [
+
+def _build_edges():
+    """Build the 44 typed edges."""
+    typed = [
         # Outer contour (6)
         (0, 1, "contour"), (7, 0, "contour"), (11, 7, "contour"),
         (7, 8, "contour"), (3, 8, "contour"), (16, 10, "contour"),
@@ -112,22 +113,28 @@ def build_schema(
         (2, 21, "mesh"), (21, 3, "mesh"),
     ]
 
-    edges = tuple(
-        Edge(from_id=a, to_id=b, edge_type=t)
-        for a, b, t in _edges_typed
-    )
+    edges = tuple(Edge(from_id=a, to_id=b, edge_type=t) for a, b, t in typed)
     assert len(edges) == 44, f"Expected 44 edges, got {len(edges)}"
+    return edges
 
-    # ── 3 arcs (all π semicircles) ────────────────────────────
-    arcs = (
+
+def _build_arcs(cx, cy, r_green, r_blue, r_gold):
+    """Build the 3 semicircular arcs."""
+    return (
         Arc("Green", cx, cy, r_green, -math.pi / 2, math.pi),
         Arc("Blue",  cx, cy, r_blue,  -math.pi / 2, math.pi),
         Arc("Gold",  cx, cy, r_gold,  -math.pi / 2, math.pi),
     )
 
-    # ── Nib geometry ──────────────────────────────────────────
+
+def _build_nib(d, r_vertex):
+    """Build the nib geometry."""
+    nib_cx, nib_circ_cy, nib_tip_y = d["nib_cx"], d["nib_circ_cy"], d["nib_tip_y"]
+    rect_r = d["rect_r"]
+    cx, r_gold = d["cx"], d["r_gold"]
     waist_y = nib_circ_cy + r_vertex
-    nib = NibGeometry(
+
+    return NibGeometry(
         outline=(
             (nib_cx, nib_tip_y),
             (rect_r, waist_y),
@@ -140,12 +147,33 @@ def build_schema(
         ball_pos=(nib_cx, nib_circ_cy),
     )
 
+
+def build_schema(
+    center: tuple[float, float] = DEFAULT_CENTER,
+    r_green: float = DEFAULT_R_GREEN,
+) -> PLogoSchema:
+    """
+    Build the complete P logo schema from two free parameters.
+
+    All geometry is derived from the composition via the √2 chain:
+        R_BLUE  = R_GREEN / √2
+        R_GREEN = free parameter
+        R_GOLD  = R_GREEN × √2
+    """
+    comp = generate_p_composition(center=center, r_green=r_green)
+    d = _derive_geometry(comp, center, r_green)
+
+    nodes = _build_nodes(d)
+    edges = _build_edges()
+    arcs = _build_arcs(d["cx"], d["cy"], r_green, d["r_blue"], d["r_gold"])
+    nib = _build_nib(d, d["r_vertex"])
+
     return PLogoSchema(
         center=center,
         r_green=r_green,
-        r_blue=r_blue,
-        r_gold=r_gold,
-        r_vertex=r_vertex,
+        r_blue=d["r_blue"],
+        r_gold=d["r_gold"],
+        r_vertex=d["r_vertex"],
         nodes=nodes,
         edges=edges,
         arcs=arcs,
