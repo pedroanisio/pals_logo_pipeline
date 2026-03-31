@@ -138,11 +138,11 @@
         },
         "LL": {
           "x": -1.389507,
-          "y": -3.418542
+          "y": -2.610414
         },
         "LR": {
           "x": -0.370293,
-          "y": -3.418542
+          "y": -2.610414
         }
       },
       "width": 1.019214,
@@ -153,7 +153,7 @@
       "name": "Circ.Rect.I",
       "center": {
         "x": -0.8799,
-        "y": -2.908935
+        "y": -2.100807
       },
       "radius": 0.509607,
       "role": "Inscribed circle in Rect.1 at bottom (nib circle)."
@@ -163,7 +163,7 @@
       "name": "Circ.Rect.V",
       "center": {
         "x": -0.8799,
-        "y": -3.928149
+        "y": -3.120021
       },
       "radius": 0.509607,
       "role": "External vertex circle at Rect.1 bottom."
@@ -242,7 +242,7 @@
     },
     "P.GRID.sqB_left.waist_y": {
       "x": -1.389507,
-      "y": -2.399328,
+      "y": -1.5912,
       "description": "Grid: Square.B left \u00d7 Circ.Rect.I top / nib waist",
       "tags": [
         "grid",
@@ -322,7 +322,7 @@
     },
     "P.GRID.sqA_v2_x.waist_y": {
       "x": -0.8799,
-      "y": -2.399328,
+      "y": -1.5912,
       "description": "Grid: Square.A V2/V3 x \u00d7 Circ.Rect.I top / nib waist",
       "tags": [
         "grid",
@@ -402,7 +402,7 @@
     },
     "P.GRID.rect_right.waist_y": {
       "x": -0.370293,
-      "y": -2.399328,
+      "y": -1.5912,
       "description": "Grid: Rect.1 right \u00d7 Circ.Rect.I top / nib waist",
       "tags": [
         "grid",
@@ -482,7 +482,7 @@
     },
     "P.GRID.center_x.waist_y": {
       "x": 0.3504,
-      "y": -2.399328,
+      "y": -1.5912,
       "description": "Grid: Center x \u00d7 Circ.Rect.I top / nib waist",
       "tags": [
         "grid",
@@ -562,7 +562,7 @@
     },
     "P.GRID.sqB_right.waist_y": {
       "x": 2.090307,
-      "y": -2.399328,
+      "y": -1.5912,
       "description": "Grid: Square.B right \u00d7 Circ.Rect.I top / nib waist",
       "tags": [
         "grid",
@@ -856,7 +856,7 @@
     },
     "P.NIB.RECT_I.TOP": {
       "x": -0.8799,
-      "y": -2.399328,
+      "y": -1.5912,
       "description": "Circ.Rect.I top (nib shoulder)",
       "tags": [
         "nib",
@@ -865,7 +865,7 @@
     },
     "P.NIB.RECT_I.CENTER": {
       "x": -0.8799,
-      "y": -2.908935,
+      "y": -2.100807,
       "description": "Circ.Rect.I center (nib waist)",
       "tags": [
         "nib",
@@ -874,7 +874,7 @@
     },
     "P.NIB.RECT_V.CENTER": {
       "x": -0.8799,
-      "y": -3.928149,
+      "y": -3.120021,
       "description": "Circ.Rect.V center (nib tip)",
       "tags": [
         "nib",
@@ -883,7 +883,7 @@
     },
     "P.NIB.WAIST.LEFT": {
       "x": -1.389507,
-      "y": -2.399328,
+      "y": -1.5912,
       "description": "Grid: sqB_left \u00d7 waist_y (Rect.1 left at nib waist)",
       "tags": [
         "nib",
@@ -893,7 +893,7 @@
     },
     "P.NIB.WAIST.RIGHT": {
       "x": -0.370293,
-      "y": -2.399328,
+      "y": -1.5912,
       "description": "Grid: rect_right \u00d7 waist_y (Rect.1 right at nib waist)",
       "tags": [
         "nib",
@@ -903,7 +903,7 @@
     },
     "P.NIB.BUMP.HUB": {
       "x": -0.8799,
-      "y": -1.634917,
+      "y": -1.230853,
       "description": "Bump center hub (midpoint SqB.bottom \u2194 waist_y)",
       "tags": [
         "nib",

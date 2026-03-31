@@ -235,6 +235,36 @@ def _check_brand_text(html: str) -> dict[str, str]:
     return {"name": "brand_text_present", "status": "fail", "detail": "Brand text missing"}
 
 
+def _check_node_positions_match_schema(graph: dict) -> dict[str, str]:
+    """Cross-layer check: pipeline node positions must match PLogoSchema.
+
+    This catches divergence between the pipeline's point_field/projection
+    and the canonical schema geometry.
+    """
+    try:
+        from p_logo import build_schema
+        schema = build_schema()
+    except ImportError:
+        return {"name": "node_positions_vs_schema", "status": "warn",
+                "detail": "p_logo not importable — skipped cross-layer check"}
+
+    tolerance = 0.01
+    mismatches = []
+    for gn in graph["nodes"]:
+        i = gn["index"]
+        sn = schema.nodes[i]
+        dx = abs(gn["x"] - sn.x)
+        dy = abs(gn["y"] - sn.y)
+        if dx > tolerance or dy > tolerance:
+            mismatches.append(f"N{i}(Δx={dx:.4f},Δy={dy:.4f})")
+
+    if not mismatches:
+        return {"name": "node_positions_vs_schema", "status": "pass",
+                "detail": "All 25 pipeline nodes match schema positions"}
+    return {"name": "node_positions_vs_schema", "status": "fail",
+            "detail": f"{len(mismatches)} nodes diverge from schema: {', '.join(mismatches[:5])}"}
+
+
 def _run_checks(
     palette: dict, graph: dict, nib: dict, arcs: dict,
     layout: dict, animations: dict, html: str,
@@ -253,6 +283,7 @@ def _run_checks(
                              "44 edges", "edges"),
         _check_metric_equals(graph_metrics, "max_degree", 6, "max_degree_6",
                              "Max degree is 6 (junction node)", "max degree"),
+        _check_node_positions_match_schema(graph),
         _check_layout_element_count(layout),
         _check_html_structure(html),
         _check_html_no_nan(html),

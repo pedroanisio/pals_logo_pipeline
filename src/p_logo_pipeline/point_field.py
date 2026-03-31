@@ -65,7 +65,9 @@ def _compute_derived(P: FieldParams):
 
     rect_width = 2 * R_VERTEX
     nib_center_x = x_sqA_v2
-    rect_bottom = y_sqB_bot - rect_width * 2.5
+    # Rect.1 height = 3 × R_A; top = cy + R_A → bottom = cy - 2×R_A
+    # (matches geometric_composition.py: rect_height = 3 * R_A)
+    rect_bottom = cy - 2 * R_A
     circ_rect_i_cy = rect_bottom + R_VERTEX
     circ_rect_i_top = circ_rect_i_cy + R_VERTEX
     circ_rect_v_cy = rect_bottom - R_VERTEX

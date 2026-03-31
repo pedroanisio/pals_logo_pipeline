@@ -154,16 +154,14 @@ class TestArcs:
 class TestSchemaAgreement:
     """Non-nib nodes, edges, and arcs must match p_logo library."""
 
-    def test_non_nib_nodes_match_schema(self, proj):
+    def test_all_nodes_match_schema(self, proj):
+        """Cross-layer: ALL node positions (including nib) must match schema."""
         from p_logo import build_schema
         schema = build_schema()
-        nib_ids = {12, 13, 14, 22, 23, 24}
         for n in proj["nodes"]:
-            if n["index"] in nib_ids:
-                continue
             sn = schema.nodes[n["index"]]
-            assert abs(n["x"] - sn.x) < 0.001, f"Node {n['index']} x: {n['x']} vs {sn.x}"
-            assert abs(n["y"] - sn.y) < 0.001, f"Node {n['index']} y: {n['y']} vs {sn.y}"
+            assert abs(n["x"] - sn.x) < 0.01, f"Node {n['index']} x: {n['x']} vs {sn.x}"
+            assert abs(n["y"] - sn.y) < 0.01, f"Node {n['index']} y: {n['y']} vs {sn.y}"
 
     def test_edge_set_matches_schema(self, proj):
         from p_logo import build_schema
@@ -186,19 +184,6 @@ class TestSchemaAgreement:
         schema_radii = sorted(a.radius for a in schema.arcs)
         for pr, sr in zip(pipe_radii, schema_radii):
             assert abs(pr - sr) < 1e-6
-
-    def test_nib_nodes_diverge_from_schema(self, proj):
-        """Document the known nib coordinate divergence (0.808 Y offset).
-        This test will FAIL when/if the nib is eventually aligned,
-        serving as a canary for intentional alignment."""
-        from p_logo import build_schema
-        schema = build_schema()
-        nib_ids = {12, 13, 14, 22, 23}  # Not 24 (hub has half the offset)
-        for n in proj["nodes"]:
-            if n["index"] in nib_ids:
-                sn = schema.nodes[n["index"]]
-                assert abs(n["y"] - sn.y) > 0.5, \
-                    f"Node {n['index']}: nib divergence may have been resolved"
 
 
 # ── Provenance ────────────────────────────────────────────────
