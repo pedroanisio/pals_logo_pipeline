@@ -4,7 +4,7 @@ Deterministic, geometry-driven pipeline for constructing and rendering the PAL's
 
 ## Disclaimer
 
-This work is subject to the methodological caveats and commitments described in [@DISCLAIMER.md](../DISCLAIMER.md).
+This work is subject to the methodological caveats and commitments described in [@DISCLAIMER.md](./DISCLAIMER.md).
 > No statement or premise not backed by a real logical definition or verifiable reference should be taken for granted.
 
 ## Architecture
@@ -32,7 +32,9 @@ The schema contains **25 nodes**, **44 typed edges** (contour, struct, mesh, nib
 | `composition.py` | Maps base geometric composition into P-logo coordinate space |
 | `geometric_composition.py` | Low-level composition generator (circles, squares, intersections) |
 | `overlay.py` | Renders composition shapes onto matplotlib axes |
+| `renderers/base.py` | Abstract base class for all renderers |
 | `renderers/` | `MatplotlibBWRenderer`, `CairoCraftedRenderer`, `V16TechnicalRenderer` |
+| `exporters/node_colors.py` | Canonical node color resolution, degree-based sizing (shared by HTML + SVG exporters) |
 | `exporters/` | JSON, SVG, GIF, HTML (Three.js animation) exporters |
 
 ### `p_logo_pipeline` — Build Pipeline
@@ -75,7 +77,7 @@ All generated logos are written to the unified `build/logos/` directory.
 | `palette.py` | 0 | 8 named colors, opacity defaults, sizing constants, nebula/star/particle specs |
 | `point_field.py` | — | Plane A: all grid crossings (5 x-columns x 8 y-rows + IS vertices + nib points) |
 | `projection.py` | — | Plane A to B: selects 25 of ~60+ field points as logo nodes, assigns typed edges |
-| `graph.py` | 1 | Adjacency lists, degree stats, palette-derived node radii |
+| `graph.py` | 1 | Adjacency lists, degree stats, degree-based node radii |
 | `nib.py` | 2 | Fountain pen nib: fan lines, diamond outline, center line, accent nodes, junction ball |
 | `arcs.py` | 3 | Samples 3 semicircular bowl arcs into 57-point polylines + runner paths |
 | `layout.py` | 4 | Composes all geometry into single coordinate space with centering and z-ordering |
@@ -175,7 +177,7 @@ The pipeline transforms the schema into a self-contained animated HTML file thro
 8 named colors (warm-dominant + 1 cool accent), opacity defaults for 15 element classes, material templates, sizing constants, nebula/star/particle/shimmer specs. Self-validating (color hex, monotonic ring radii, warm/cool ratio).
 
 **Step 1 — Graph:**
-Adds adjacency lists, degree stats, palette-derived node radii (junction node 9 gets `0.14`, others `0.09`). Validates 25 nodes, 44 edges, connectivity, junction degree = 6.
+Adds adjacency lists, degree stats, and node radii. Validates 25 nodes, 44 edges, connectivity, junction degree = 6. The canonical node sizing model is degree-based: `core_r(d) = R_VERTEX × 0.035 × (√2)^(d−1)`, producing a continuous scale from ~0.018 (deg 1) to ~0.101 (deg 6).
 
 **Step 2 — Nib:**
 Fountain pen nib geometry: 6 fan lines (3 per side) radiating from the tip, 4 diamond outline segments, 1 blue-glow center line, 4 accent nodes, 1 warm-white junction ball, ink emission origin. All parametric from `tip_y`, `top_y`, `half_width`, `fan_count`.
@@ -264,22 +266,19 @@ pals_logo_pipeline/
 
 All generated logos go to `build/logos/` with the pattern `p_logo_{renderer}_{variant}.{ext}`:
 
-| File | Renderer | Description |
-|------|----------|-------------|
-| `p_logo_schema.json` | — | Canonical schema |
-| `p_logo_bw_dark.png` | `bw` | White logo on black background |
-| `p_logo_bw_light.png` | `bw` | Black logo on white background |
-| `p_logo_bw_overlay_dark.png` | `bw` | Composition overlay (dark) |
-| `p_logo_bw_overlay_light.png` | `bw` | Composition overlay (light) |
-| `p_logo_cairo_{size}.png` | `cairo` | Cairo crafted-logic render |
-| `p_logo_cairo_{size}_transparent.png` | `cairo` | Transparent background |
-| `p_logo_cairo_debug_{size}.png` | `cairo` | Debug construction lines |
-| `p_logo_v16_technical.png` | `v16` | Technical drawing style |
-| `p_logo_vector.svg` | — | Vector SVG |
-| `p_logo_threejs.html` | `threejs` | Three.js animation (exporter) |
-| `p_logo_animated.gif` | — | Animated GIF |
-| `p_logo_pipeline.html` | `pipeline` | Three.js animation (pipeline) |
-| `p_logo_pipeline_overlay.html` | `pipeline` | Plane A→B construction overlay |
+| File | Source | Description |
+|------|--------|-------------|
+| `p_logo_schema.json` | `json_export` | Canonical schema (25 nodes, 44 edges, 3 arcs) |
+| `p_logo_bw_dark.png` | `matplotlib_bw` | White logo on black background |
+| `p_logo_bw_light.png` | `matplotlib_bw` | Black logo on white background |
+| `p_logo_v16_technical.png` | `v16_technical` | Technical drawing style |
+| `p_logo_vector.svg` | `svg_export` | Palette-driven vector SVG (colored nodes, ring, glows, stars) |
+| `p_logo_threejs.html` | `html_export` | Three.js animation (exporter) |
+| `p_logo_animated.gif` | `gif_export` | Animated GIF |
+| `p_logo_pipeline.html` | `render.py` | Three.js animation (pipeline Step 6) |
+| `p_logo_pipeline_overlay.html` | `render_overlay.py` | Plane A→B construction overlay |
+
+Cairo renders (`render_cairo.py`) and B&W overlays (`render_bw.py`) can be generated via their individual scripts but are not part of the default `generate_all.py` output.
 
 ## Usage
 
@@ -309,5 +308,6 @@ python3 scripts/render_v16.py            # V16 technical drawing
 
 - **Single source of truth**: All geometry derives from `build_schema(center, r_green)`.
 - **Frozen data**: `PLogoSchema` and all component types are immutable dataclasses.
+- **Canonical sizing**: Node radii are degree-based via the sqrt(2) chain: `core_r(d) = R_VERTEX × 0.035 × (√2)^(d−1)`. Glow radius = core × 5. This formula is shared across renderers via `node_colors.py`.
 - **Separation of concerns**: Schema knows nothing about rendering; renderers know nothing about geometry derivation; the pipeline steps are pure data transformations producing JSON.
 - **Deterministic**: Same parameters always produce identical output.

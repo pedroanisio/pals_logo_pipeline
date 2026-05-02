@@ -44,7 +44,9 @@ Adjust the relative path to match depth: root → `./DISCLAIMER.md`, one level �
 │   │   ├── geometric_composition.py  # Low-level composition generator
 │   │   ├── overlay.py       #   Renders composition shapes onto matplotlib axes
 │   │   ├── renderers/       #   MatplotlibBW, CairoCrafted, V16Technical renderers
+│   │   │   └── base.py      #   Abstract base class for all renderers
 │   │   └── exporters/       #   JSON, SVG, GIF, HTML (Three.js animation) exporters
+│   │       └── node_colors.py #  Canonical color resolution + degree-based sizing
 │   └── p_logo_pipeline/     # Build pipeline (7 steps + overlay)
 │       ├── palette.py       #   Step 0: colors, opacity defaults, sizing constants
 │       ├── point_field.py   #   Plane A: all grid crossings
